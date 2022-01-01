@@ -5,7 +5,7 @@ import datetime
 
 class CannotCreateDirectory(Exception):
     def __init__(self, arg):
-        self.arg = arg
+        self.arg = str(arg)
 
         super().__init__(self.arg)
 
@@ -14,7 +14,7 @@ class CannotCreateDirectory(Exception):
 
 class CannotCreateFile(Exception):
     def __init__(self, arg):
-        self.arg = arg
+        self.arg = str(arg)
 
         super().__init__(self.arg)
 
@@ -23,7 +23,7 @@ class CannotCreateFile(Exception):
 
 class ModuleImportFailure(Exception):
     def __init__(self, arg):
-        self.arg = arg
+        self.arg = str(arg)
 
         super().__init__(self.arg)
 
@@ -32,19 +32,18 @@ class ModuleImportFailure(Exception):
 
 class CannotInstallIntagratedModule(Exception):
     def __init__(self, arg):
-        self.arg = arg
+        self.arg = str(arg)
 
         super().__init__(self.arg)
 
     def __str__(self):
         return f" -> The '{self.arg}' module is integrated and cannot be installed."
 
-# ---------------------------------------------------------------------------------------------------------------------
+# --------------------------------------------------------------------------------------------------------------------- 
 
 class GuardianClass:
 
     def __make_log(self, lvl = "warning", err = "0x0", arg = "None", date = True):
-
         part_one    =   f"{str(lvl).upper()}; "
         part_two    =   f"{str(datetime.datetime.now())}; "
         part_three  =   f"{str(err)}; "
@@ -59,7 +58,6 @@ class GuardianClass:
         return f"{part_one}\n"
 
     def __init__(self):
-
         self.__missing_file             =           []
         self.__missing_directory        =           []
         self.__missing_module           =           []
@@ -113,9 +111,8 @@ class GuardianClass:
         self.project_modules            =           []
 
         self.__TRIES                    =           5
-        self.__TOKEN                    =           None
 
-        # ------------------------------------ Creating data fodler with log file  ------------------------------------
+        # ------------------------------------ Creating data folder with log file  ------------------------------------
 
         if not os.path.exists(str(self.__directory[0])):
             self.__missing_directory.append(str(self.__directory[0]))
