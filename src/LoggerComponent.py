@@ -14,7 +14,6 @@ The basic classes defined by the module, together with their functions, are list
 """
 
 import os
-import time
 import datetime
 
 class LoggerClass:
