@@ -15,21 +15,23 @@ The basic classes defined by the module, together with their functions, are list
 
 import os
 import datetime
+from .ExceptionsComponent import *
 
 class LoggerClass:
     def __make_log(self, lvl = "warning", err = "0x0", arg = "None", date = True):
         """
-        Returns a text message that is written to the event log as log.
+        Returns a text message that is written to the event log as a log.
 
         Args:
-            lvl (str, optional): [description]. Defaults to "warning".
-            err (str, optional): [description]. Defaults to "0x0".
-            arg (str, optional): [description]. Defaults to "None".
-            date (bool, optional): [description]. Defaults to True.
+            lvl (str, optional): Stores information about the login level. Defaults to "warning".
+            err (str, optional): Stores information about the error code. Defaults to "0x0".
+            arg (str, optional): Stores information about any additional information regarding the log. Defaults to "None".
+            date (bool, optional): Stores information about whether the exact date is to be included in the log. Defaults to True.
 
         Returns:
-            str: Returns a text message that is written to the event log as log.
+            str: Returns a text message that is written to the event log as a log.
         """
+
         part_one    = f"{str(lvl).upper()}; "
         part_two    = f"{str(datetime.datetime.now())}; "
         part_three  = f"{str(err)}; "
@@ -148,25 +150,24 @@ class LoggerClass:
 
         # --------------------------------------------------------------------
 
-    def config(self, file = "logs.log", mode = "a", level = "info", date = True,
-               encode = False, custom_extension = False):
+    def config(self, file = "logs.log", mode = "a", level = "info", date = True, encode = False, custom_extension = False):
         """
-        Early logger configuration to define basic elements
+        Logger configuration to define basic elements of the log.
 
         Args:
-            file (str, optional): Defines the event log file. Defaults to "logs.log".
+            file (str, optional): Defines the path to log file. Defaults to "logs.log".
             mode (str, optional): Defines the file type of opening and writing to the file. Defaults to "a".
-            level (str, optional): Defines the log logging type. Defaults to "info".
+            level (str, optional): Defines the logging type. Defaults to "info".
             date (bool, optional): Defines whether the date should be included in the logs. Defaults to True.
             encode (bool, optional): Defines whether the arguments are to be encoded. Defaults to False.
             custom_extension (bool, optional): Defines whether the user may use an extension other than .log. Defaults to False.
 
         Raises:
             TypeError: Incorrect type for custom_extension parameter.
-            OSError: File cannot be created.
-            OSError: File cannot be created.
-            OSError: File cannot be created.
-            OSError: File cannot be created.
+            OSError: The file cannot be created.
+            OSError: The file cannot be created.
+            OSError: The file cannot be created.
+            OSError: The file cannot be created.
             ValueError: Unknown priority code.
             ValueError: Unknown priority code.
             ValueError: Unknown priority code.
@@ -278,54 +279,48 @@ class LoggerClass:
         Encodes the user-supplied argument into bytes.
 
         Args:
-            arg ([type]): [description]
+            arg (str): Stores the message to be encoded.
 
         Returns:
             bytes: Returns an argument converted to bytes ready for an event log entry
         """
 
         if self.__encode: return arg.encode()
-        else: return arg
+        else: raise EncodeSetToFalse
 
     def emergency(self, error = "0x0", args = "None"):
         """
-
         Enters logs to the event log file.
 
         Args:
             error (str, optional): Holds an error code. Defaults to "0x0".
             args (str, optional): Keeps any additional information. Defaults to "None".
-
         """
 
         with open(self.__file, self.__mode) as f:
             f.write(self.__make_log(lvl = "EMERGENCY", date = self.__date,
                     err = error, arg = self.__encoder(args)))
 
-    def alert(self, error="0x0", args="None"):
+    def alert(self, error = "0x0", args = "None"):
         """
-
         Enters logs to the event log file.
 
         Args:
             error (str, optional): Holds an error code. Defaults to "0x0".
             args (str, optional): Keeps any additional information. Defaults to "None".
-
         """
 
         with open(self.__file, self.__mode) as f:
             f.write(self.__make_log(lvl = "ALERT", date = self.__date,
                     err = error, arg = self.__encoder(args)))
 
-    def critical(self, error="0x0", args="None"):
+    def critical(self, error = "0x0", args = "None"):
         """
-
         Enters logs to the event log file.
 
         Args:
             error (str, optional): Holds an error code. Defaults to "0x0".
             args (str, optional): Keeps any additional information. Defaults to "None".
-
         """
 
         with open(self.__file, self.__mode) as f:
@@ -334,13 +329,11 @@ class LoggerClass:
 
     def error(self, error = "0x0", args = "None"):
         """
-
         Enters logs to the event log file.
 
         Args:
             error (str, optional): Holds an error code. Defaults to "0x0".
             args (str, optional): Keeps any additional information. Defaults to "None".
-
         """
 
         with open(self.__file, self.__mode) as f:
@@ -349,13 +342,11 @@ class LoggerClass:
 
     def warning(self, error = "0x0", args = "None"):
         """
-
         Enters logs to the event log file.
 
         Args:
             error (str, optional): Holds an error code. Defaults to "0x0".
             args (str, optional): Keeps any additional information. Defaults to "None".
-
         """
 
         with open(self.__file, self.__mode) as f:
@@ -364,13 +355,11 @@ class LoggerClass:
 
     def notice(self, error = "0x0", args = "None"):
         """
-
         Enters logs to the event log file.
 
         Args:
             error (str, optional): Holds an error code. Defaults to "0x0".
             args (str, optional): Keeps any additional information. Defaults to "None".
-
         """
 
         with open(self.__file, self.__mode) as f:
@@ -379,13 +368,11 @@ class LoggerClass:
 
     def info(self, error = "0x0", args = "None"):
         """
-
         Enters logs to the event log file.
 
         Args:
             error (str, optional): Holds an error code. Defaults to "0x0".
             args (str, optional): Keeps any additional information. Defaults to "None".
-
         """
 
         with open(self.__file, self.__mode) as f:
@@ -394,13 +381,11 @@ class LoggerClass:
 
     def debug(self, error = "0x0", args = "None"):
         """
-
         Enters logs to the event log file.
 
         Args:
             error (str, optional): Holds an error code. Defaults to "0x0".
             args (str, optional): Keeps any additional information. Defaults to "None".
-
         """
         
         with open(self.__file, self.__mode) as f:
