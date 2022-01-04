@@ -74,11 +74,9 @@ class DatabaseClass:
             raise CannotCreateCursor()
 
     def __check_table_exists(self, table_name):
-        try: self.c.execute("SELECT * FROM {}".format(str(table_name)))
-        except: pass
 
-        if self.c.fetchall() == []: return True
-        else: return False
+        if self.c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='{}'".format(str(table_name))).fetchall() == []: return False
+        else: return True        
 
     def create_table(self, table_name, table_elements):
         self.__table_elements = {}
@@ -167,19 +165,21 @@ class DatabaseClass:
         try: self.c.execute("UPDATE {} SET {} = {}".format(str(table_name), str(column_name), str(column_value)))
         except: 
             if self.__write_to_log: 
-                self.__logger.error(error = "0x1D", args = "The item cannot be updated.")
+                self.__logger.error(error = "0x1D", args = "The item cannot be updated | Statement: UPDATE {} SET {} = {}" \
+                    .format(str(table_name), str(column_name), str(column_value)))
             
             raise CannotUpdateDatabase("UPDATE {} SET {} = {}".format(str(table_name), str(column_name), str(column_value)))
 
         self.conn.commit()
 
     def update_by_statememt(self, table_name, statement, statement_value, column_name, column_value):
-        try:self.c.execute("UPDATE {} SET {} = {} WHERE {} = {}".format(str(table_name), str(column_name), str(column_value), str(statement), str(statement_value)))
+        try: self.c.execute("UPDATE {} SET {} = {} WHERE {} = {}".format(str(table_name), str(column_name), str(column_value), str(statement), str(statement_value)))
         except: 
             if self.__write_to_log: 
-                self.__logger.error(error = "0x1D", args = "The item cannot be updated.")
+                self.__logger.error(error = "0x1D", args = "The item cannot be updated | Statement: UPDATE {} SET {} = {} WHERE {} = {}"\
+                    .format(str(table_name), str(column_name), str(column_value), str(statement), str(statement_value)))
             
-            raise CannotUpdateDatabase("UPDATE {} SET {} = {}".format(str(table_name), str(column_name), str(column_value)))
+            raise CannotUpdateDatabase("UPDATE {} SET {} = {} WHERE {} = {}".format(str(table_name), str(column_name), str(column_value), str(statement), str(statement_value)))
         
         self.conn.commit()
 
@@ -194,15 +194,21 @@ class DatabaseClass:
         self.conn.commit()
 
     def delete(self, table_name):
-        self.c.execute("DELETE FROM {}".format(str(table_name)))
+        try: self.c.execute("DELETE FROM {}".format(str(table_name)))
+        except: 
+            if self.__write_to_log: 
+                self.__logger.error(error = "0x1D", args = "The item cannot be deleted | Statement: DELETE FROM {}".format(str(table_name)))
+            
+            raise CannotDeleteElements("DELETE FROM {}".format(str(table_name)))
+
         self.conn.commit()
 
     def deltete_by_statement(self, table_name, statement, statement_value):
         try: self.c.execute("DELETE FROM {} WHERE {} = {}".format(str(table_name), str(statement), str(statement_value)))
         except: 
             if self.__write_to_log: 
-                self.__logger.error(error = "0x1D", args = "The item cannot be deleted | Statement: {} | Value: {}"
-                    .format(str(statement), str(statement_value)))
+                self.__logger.error(error = "0x1D", args = "The item cannot be deleted | Statement: DELETE FROM {} WHERE {} = {}" \
+                    .format(str(table_name), str(statement), str(statement_value)))
             
             raise CannotDeleteElements("DELETE FROM {} WHERE {} = {}".format(str(table_name), str(statement), str(statement_value)))
 
@@ -214,7 +220,8 @@ class DatabaseClass:
         try: self.c.execute("DELETE FROM {} WHERE id = {}".format(str(table_name), str(rowid)))
         except:
             if self.__write_to_log: 
-                self.__logger.error(error = "0x1D", args = "The item cannot be deleted.")
+                self.__logger.error(error = "0x1D", args = "The item cannot be deleted | Statement: 'DELETE FROM {} WHERE id = {}'" \
+                    .format(str(table_name), str(rowid)))
             
             raise CannotDeleteElements("DELETE FROM {} WHERE id = {}".format(str(table_name), str(rowid)))
         
@@ -226,7 +233,7 @@ class DatabaseClass:
         try: self.c.execute(statement)
         except:
             if self.__write_to_log: 
-                self.__logger.error(error = "0x16", args = "The statement cannot be executed | Statement: {}".format(str(statement)))
+                self.__logger.error(error = "0x16", args = "The statement cannot be executed | Statement: '{}'".format(str(statement)))
 
             raise CannotExecuteCustomStatement(statement)
 
