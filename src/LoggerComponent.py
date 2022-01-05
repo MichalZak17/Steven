@@ -163,109 +163,77 @@ class LoggerClass:
             custom_extension (bool, optional): Defines whether the user may use an extension other than .log. Defaults to False.
 
         Raises:
-            TypeError: Incorrect type for custom_extension parameter.
-            OSError: The file cannot be created.
-            OSError: The file cannot be created.
-            OSError: The file cannot be created.
-            OSError: The file cannot be created.
-            ValueError: Unknown priority code.
-            ValueError: Unknown priority code.
-            ValueError: Unknown priority code.
-            ValueError: Unknown priority code.
-            ValueError: Incorrect opening type.
+            TypeError: Incorrect type for custom_extension parameter. Must be boolean;
+            OSError: The file cannot be created;
+            OSError: The file cannot be created;
+            OSError: The file cannot be created;
+            OSError: The file cannot be created;
+            ValueError: Unknown priority code;
+            ValueError: Unknown priority code;
+            ValueError: Unknown priority code;
+            ValueError: Incorect opening mode;
+            ValueError: File mode must be a string;
         """
 
-        if isinstance(custom_extension, bool):
-            self.__custom_extension = custom_extension
+        if isinstance(custom_extension, bool): self.__custom_extension = custom_extension
+        else: raise TypeError("Incorrect type for custom_extension parameter. Must be boolean.")
 
-        else:
-            raise TypeError("Incorrect type for custom_extension parameter.")
-
-        # -------------------------------------------------------------------------------------------------------------
+        # -------------------------------------------- Replacing extension --------------------------------------------
 
         if not self.__custom_extension:
-            try:
-                file = file.replace(str(file.split(".")[-1]), "log")
-            except:
-                pass
+            try: file = file.replace(str(file.split(".")[-1]), "log")
+            except: pass
 
-            if not str(file.split(".")[-1]) == "log":
-                file += ".log"
+            if not str(file.split(".")[-1]) == "log": file += ".log"
 
-        # -------------------------------------------------------------------------------------------------------------
+        # ----------------------------------------------- Setting file  -----------------------------------------------
 
         if not os.path.exists("{}/{}".format(str(self.__directory["data"]), str(file))):
             if os.path.exists(str(self.__directory["data"])):
                 for i in range(self.__TRIES):
-                    try:
-                        self.__log = open(
-                            f"{str(self.__directory['data'])}/{str(file)}", "w")
-                    except:
-                        pass
-                    else:
-                        self.__file = "{}/{}".format(
-                            str(self.__directory["data"]), str(file))
+                    try: self.__log = open(f"{str(self.__directory['data'])}/{str(file)}", "w")
+                    except: pass
+                    else: 
+                        self.__file = "{}/{}".format(str(self.__directory["data"]), str(file))
                         self.__log.close()
                         break
 
-                else:
-                    raise OSError(
-                        "The '{}/{}' file cannot be created.".format(str(self.__directory["data"]), str(file)))
+                else: raise OSError("The '{}/{}' file cannot be created.".format(str(self.__directory["data"]), str(file)))
 
-            else:
-                raise OSError("The '{}' directory has been deleted.".format(
-                    str(self.__directory["data"])))
+            else: raise OSError("The '{}' directory has been deleted.".format(str(self.__directory["data"])))
 
         else:
             if os.path.exists(str(self.__directory["data"])):
                 for i in range(self.__TRIES):
-                    try:
-                        self.__log = open(
-                            f"{str(self.__directory['data'])}/{str(file)}", "r")
-                    except:
-                        pass
+                    try: self.__log = open(f"{str(self.__directory['data'])}/{str(file)}", "r")
+                    except: pass
                     else:
-                        self.__file = "{}/{}".format(
-                            str(self.__directory["data"]), str(file))
+                        self.__file = "{}/{}".format(str(self.__directory["data"]), str(file))
                         self.__log.close()
                         break
 
-                else:
-                    raise OSError(
-                        "The '{}/{}' file cannot be created.".format(str(self.__directory["data"]), str(file)))
+                else: raise OSError("The '{}/{}' file cannot be created.".format(str(self.__directory["data"]), str(file)))
 
-            else:
-                raise OSError("The '{}' directory has been deleted.".format(
-                    str(self.__directory["data"])))
+            else: raise OSError("The '{}' directory has been deleted.".format(str(self.__directory["data"])))
 
-        # -------------------------------------------------------------------------------------------------------------
+        # ----------------------------------------------- Setting level -----------------------------------------------
 
         if isinstance(level, int):
-            if level > self.__LOWEST_CODE and level < self.__HIGHEST_CODE:
-                self.__level = level
-            else:
-                raise ValueError("Unknown priority code.")
-
+            if level > self.__LOWEST_CODE and level < self.__HIGHEST_CODE: self.__level = level
+            else: raise ValueError("Unknown priority code.")
         elif isinstance(level, str):
-            try:
-                self.__level = self.__priority_names[level.lower()]
-            except:
-                raise ValueError("Unknown priority code.")
-        else:
-            raise ValueError("Unknown priority code.")
+            try:self.__level = self.__priority_names[level.lower()]
+            except: raise ValueError("Unknown priority code.")
+        else: raise ValueError("Unknown priority code.")
 
-        # -------------------------------------------------------------------------------------------------------------
+        # ----------------------------------------------- Setting mode ------------------------------------------------
 
         opening_modes_temp = ["w", "wb", "a"]
 
         if isinstance(mode, str):
-            if not mode in opening_modes_temp:
-                raise ValueError("Incorrect opening type.")
-            else:
-                self.__mode = mode
-
-        else:
-            raise ValueError("File mode must be str.")
+            if not mode in opening_modes_temp: raise ValueError("Incorrect opening type.")
+            else: self.__mode = mode
+        else:raise ValueError("File mode must be string.")
 
         del opening_modes_temp
 
@@ -286,7 +254,7 @@ class LoggerClass:
         """
 
         if self.__encode: return arg.encode()
-        else: raise EncodeSetToFalse
+        else: return arg
 
     def emergency(self, error = "0x0", args = "None"):
         """
