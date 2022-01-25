@@ -1,5 +1,3 @@
-
-
 import os
 import datetime
 import configparser
@@ -101,31 +99,18 @@ class CannotInstallIntagratedModule(Exception):
 # --------------------------------------------------------------------------------------------------------------------- 
 
 class GuardianClass:
-    def __make_log(self, lvl = "warning", err = "0x0", arg = "None", date = True):
+    def __create_log(self, lvl = "warning", err = "0x0", arg = "None"):
         """
-        Message format assistant
+        Logger function.
 
         Args: 
             lvl (str): Log level.
             err (str): Error code.
             arg (str): Argument.
-            date (bool): Date flag.
 
-        Returns:
-            str: Formatted message.
         """
-        part_one    =   f"{str(lvl).upper()}; "
-        part_two    =   f"{str(datetime.datetime.now())}; "
-        part_three  =   f"{str(err)}; "
-        part_four   =   f"{str(arg)}; "
-
-        if date:
-            part_one += part_two
-
-        part_one += part_three
-        part_one += part_four
-
-        return f"{part_one}\n"
+        with open(self.__file["log"], "a") as log:
+            log.write(f"{lvl.upper()}; {datetime.datetime.now()}; {err}; {arg}; \n")
 
     def __create_config(self):
         """
@@ -150,15 +135,18 @@ class GuardianClass:
         self.__missing_directory        =           []
         self.__missing_module           =           []
 
-        self.__directory                =           [
-            "data", "data/database", "data/backup", "config"
-        ]
-        self.__file                     =           [
-            "data/logs.log", "data/dirs.pkl",
-            "data/files.pkl", "config/_thread.ini"
-        ]
+        self.__directory                =           {
+            "data":                     "data", 
+            "database":                     "data/database",
+            "backup":                   "data/backup",
+            "config":                   "config"
+        }
+        self.__file                     =           {
+            "log":                      "data/logs.log", 
+            "config":                   PATH_CONFIG
+        }
 
-        self.__modules                   =           []
+        self.__modules                  =           []
         self.__default_modules          =           [
             "os",
             "sys",
@@ -207,77 +195,85 @@ class GuardianClass:
 
         # ------------------------------------ Creating data folder with log file  ------------------------------------
 
-        if not os.path.exists(self.__directory[0]):
-            self.__missing_directory.append(self.__directory[0])
-            self.__missing_file.append(self.__file[0])
+        if not os.path.exists(self.__directory["data"]):
+            self.__missing_directory.append(self.__directory["data"])
+            self.__missing_file.append(self.__file["log"])
 
             for i in range(self.__TRIES):
-                try: os.makedirs(self.__directory[0])
+                try: os.makedirs(self.__directory["data"])
                 except: pass
                 else: break
 
-            else: raise CannotCreateDirectory(self.__directory[0])
+            else: raise CannotCreateDirectory(self.__directory["data"])
 
             # ---------------------------------------- Creating logs.log file  ----------------------------------------
 
             for i in range(self.__TRIES):
-                try: self.__log = open(self.__file[0], "w")
+                try: self.__log = open(self.__file["log"], "w")
                 except: pass
                 else:
                     self.__log.close()
                     break
 
-            else: raise CannotCreateFile(self.__file[0])
+            else: raise CannotCreateFile(self.__file["log"])
 
         # ------------------------------------------ Creating logs.log file  ------------------------------------------
 
-        if not os.path.exists(self.__file[0]):
-            self.__missing_file.append(self.__file[0])
+        if not os.path.exists(self.__file["log"]):
+            self.__missing_file.append(self.__file["log"])
 
             for i in range(self.__TRIES):
-                try: self.__log = open(self.__file[0], "w")
+                try: self.__log = open(self.__file["log"], "w")
                 except: pass
                 else:
                     self.__log.close()
                     break
 
-            else: raise CannotCreateFile(self.__file[0])
+            else: raise CannotCreateFile(self.__file["log"])
+
+        # ------------------------------------------ Checking config folder  ------------------------------------------
+
+        if not os.path.exists(self.__directory["config"]):
+            self.__missing_directory.append(self.__directory["config"])
+            self.__create_log(err = "0x3", arg = self.__directory["config"])
+
+            for i in range(self.__TRIES):
+                try: os.makedirs(self.__directory["config"])
+                except: pass
+                else: break
+
+            else: raise CannotCreateDirectory(self.__directory["config"])
 
         # -------------------------------------------- Reading config file --------------------------------------------
 
         self.__config = configparser.ConfigParser()
 
-        if not os.path.exists(PATH_CONFIG):
-            self.__missing_file.append(PATH_CONFIG)
-
-            with open(self.__file[0], "a") as log:
-                    log.write(self.__make_log(err = "0x2", arg = PATH_CONFIG))
+        if not os.path.exists(self.__file["config"]):
+            self.__missing_file.append(self.__file["config"])
+            self.__create_log(err = "0x2", arg = self.__file["config"])
 
             self.__modules = self.__default_modules
             self.__create_config()
 
-            with open(self.__file[0], "a") as log:
-                    log.write(self.__make_log(err = "0x0", arg = "The {} has been restored to default.".format(PATH_CONFIG)))
+            self.__create_log(arg = f"The {self.__file['config']} has been restored to default.")
 
         # -------------------------------------- Creating config file if missing --------------------------------------
 
         else:
             try:
-                self.__config.read(PATH_CONFIG)
+                self.__config.read(self.__file["config"])
                 self.__modules = self.__config["MODULES"]["modules"][1:-1].split(", ")
 
                 for i in range(len(self.__modules)):
                     self.__modules[i] = self.__modules[i][1:-1]
 
             except: 
-                with open(self.__file[0], "a") as log:
-                    log.write(self.__make_log(err = "0xD", arg = PATH_CONFIG))
+                self.__create_log(err = "0xD", arg = self.__file["config"])
 
                 self.__modules = self.__default_modules
                 self.__create_config()
-
-                with open(self.__file[0], "a") as log:
-                    log.write(self.__make_log(err = "0x0", arg = "The {} has been restored to default.".format(PATH_CONFIG)))
+                
+                self.__create_log(arg = f"The {self.__file['config']} has been restored to default.")
      
         # ---------------------------------- Importing import_module from importlib -----------------------------------
 
@@ -296,10 +292,8 @@ class GuardianClass:
 
         for module in self.__project_modules:
             try: globals()[module] = import_module("src", module)
-            except: 
-                with open(self.__file[0], "a") as log:
-                    log.write(self.__make_log(err = "0x7E", arg = module))
-                
+            except:
+                self.__create_log(err = "0x7E", arg = module)                
                 raise ModuleImportFailure(module)
 
         # --------------------------------------- Installing addnotical modules ---------------------------------------
@@ -308,9 +302,7 @@ class GuardianClass:
             os.system("sudo apt install python3-pip")
 
             while len(self.__missing_module) > 0:
-
-                with open(self.__file[0], "a") as log:
-                    log.write(self.__make_log(err = "0x7E", arg = self.__missing_module[0]))
+                self.__create_log(err = "0x7E", arg = self.__missing_module[0])
 
                 if not self.__missing_module[0] in self.__integrated_modules:
                     for i in range(self.__TRIES):
@@ -326,18 +318,17 @@ class GuardianClass:
         # ------------------------------------- Adding missing directoris to list -------------------------------------
 
         for dir in self.__directory:
-            if not os.path.exists(dir):
-                self.__missing_directory.append(dir)
+            if not os.path.exists(self.__directory[dir]):
+                self.__missing_directory.append(self.__directory[dir])
 
         for file in self.__file:
-            if not os.path.exists(file):
-                self.__missing_file.append(file)
+            if not os.path.exists(self.__file[file]):
+                self.__missing_file.append(self.__file[file])
 
         # --------------------------------------- Adding missing files to list ----------------------------------------
 
         while len(self.__missing_directory) > 0:
-            with open(self.__file[0], "a") as log:
-                log.write(self.__make_log(err = "0x3", arg = self.__missing_directory[0]))
+            self.__create_log(err = "0x3", arg = self.__missing_directory[0])
 
             if not os.path.exists(self.__missing_directory[0]):
                 for i in range(self.__TRIES):
@@ -350,28 +341,89 @@ class GuardianClass:
             self.__missing_directory.pop(0)
 
         while len(self.__missing_file) > 0:
-            with open(self.__file[0], "a") as log:
-                log.write(self.__make_log(err = "0x2", arg = self.__missing_file[0]))
-
+            self.__create_log(err = "0x2", arg = self.__missing_file[0])
             self.__missing_file.pop(0)
 
         # -------------------------------------------------- Thread ---------------------------------------------------
 
         class ThreadClass(threading.Thread):
+            def __create_log(self, lvl = "warning", err = "0x0", arg = "None"):
+                """
+                Logger function.
+
+                Args: 
+                    lvl (str): Log level.
+                    err (str): Error code.
+                    arg (str): Argument.
+
+                """
+                with open(self.__file["log"], "a") as log:
+                    log.write(f"{lvl.upper()}; {datetime.datetime.now()}; {err}; {str(arg)}; \n")
+
+            def __create_config(self):
+                """
+                Create config file with default values.
+                """
+                self.__config = configparser.ConfigParser()
+
+                self.__config["MODULES"] = {
+                    "modules": self.__default_modules
+                }
+
+                self.__config["SETTINGS"] = {
+                    "timeaftercycle": "5",
+                    "numberoftries": "5"
+                }
+
+                with open(PATH_CONFIG, "w") as f:
+                    self.__config.write(f)
+            
             def __init__(self):
                 threading.Thread.__init__(self)
 
                 self.__missing_file             =           []
                 self.__missing_directory        =           []
 
-                self.__directory                =           [
-                    "data", "data/database", "data/backup",
-                    "config"
+                self.__directory                =           {
+                    "data":                     "data", 
+                    "database":                 "data/database",
+                    "backup":                   "data/backup",
+                    "config":                   "config"
+                }
+                self.__file                     =           {
+                    "log":                      "data/logs.log", 
+                    "config":                   PATH_CONFIG,
+                    "dirstructure":             "data/dirs.pkl"
+                }
+
+                self.__default_modules          =           [
+                    "os",
+                    "sys",
+                    "time",
+                    "json",
+                    "math",
+                    "random",
+                    "pickle",
+                    "sqlite3",
+                    "datetime",
+                    "itertools",
+                    "threading",
+                    "configparser",
+
+                    # ----------------------- System modules -----------------------
+
+                    "torch",
+                    "numpy",
+                    "scipy",
+                    "geopy",
+                    "pandas",
+                    "discord",
+                    "requests",
+                    "geocoder",
+                    "matplotlib",
+                    "progressbar"
                 ]
-                self.__file                     =           [
-                    "data/logs.log", "data/dirs.pkl",
-                    "data/files.pkl", PATH_CONFIG
-                ]
+                
 
                 self.__IS_RUNNING               =           False
                 self.__SLEEP_TIME               =           5
@@ -380,43 +432,15 @@ class GuardianClass:
                 # ------------------------------------------- Thread Config -------------------------------------------
 
                 self.__config = configparser.ConfigParser()
-
-                if not self.__config.has_section("SETTINGS"): 
-                    with open(self.__file[0], "a") as log:
-                        log.write(self.__make_log(err = "0xD", arg = "The 'SETTINGS' section could not be found in config file."))
-                else:
-                    try:
-                        self.__config.read(PATH_CONFIG)
-                        self.__SLEEP_TIME = self.__config["SETTINGS"].getfloat("timeaftercycle")
-                        self.__TRIES = self.__config["SETTINGS"].getint("numberoftries")
-                    
-                    except: pass
-
-            def __make_log(self, lvl = "warning", err = "0x0", arg = "None", date = True):
-                """
-                Message format assistant
-
-                Args: 
-                    lvl (str): Log level.
-                    err (str): Error code.
-                    arg (str): Argument.
-                    date (bool): Date flag.
-
-                Returns:
-                    str: Formatted message.
-                """
-                part_one    =   f"{str(lvl).upper()}; "
-                part_two    =   f"{str(datetime.datetime.now())}; "
-                part_three  =   f"{str(err)}; "
-                part_four   =   f"{str(arg)}; "
-
-                if date:
-                    part_one += part_two
-
-                part_one += part_three
-                part_one += part_four
-
-                return f"{part_one}\n"
+                
+                try:
+                    self.__config.read(self.__file["config"])
+                    self.__SLEEP_TIME = self.__config["SETTINGS"].getfloat("timeaftercycle")
+                    self.__TRIES = self.__config["SETTINGS"].getint("numberoftries")
+                except: 
+                    self.__create_log(err = "0xD", arg = "Cannot read the config file.")
+                    self.__create_config()
+                    self.__create_log(arg = f"The {self.__file['config']} has been restored to default.")
 
             def run(self):
                 self.__IS_RUNNING = True
@@ -426,196 +450,116 @@ class GuardianClass:
 
                     if self.__IS_RUNNING:
 
-                        # ---------------------------- Creating data fodler with log file  ----------------------------
+                        # ---------------------------- Creating data folder with log file  ----------------------------
 
-                        if not os.path.exists(self.__directory[0]):
-                            self.__missing_directory.append(self.__directory[0])
-                            self.__missing_file.append(self.__file[0])
+                        if not os.path.exists(self.__directory["data"]):
+                            self.__missing_directory.append(self.__directory["data"])
+                            self.__missing_file.append(self.__file["log"])
 
                             for i in range(self.__TRIES):
-                                try: os.makedirs(self.__directory[0])
+                                try: os.makedirs(self.__directory["data"])
                                 except: pass
                                 else: break
 
-                            else: raise CannotCreateDirectory(self.__directory[0])
+                            else: raise CannotCreateDirectory(self.__directory["data"])
 
-                            # ------------------------------------------------------------------------------------------
+                            # ---------------------------------------- Creating logs.log file  ----------------------------------------
 
                             for i in range(self.__TRIES):
-                                try: self.__log = open(self.__file[0], "w")
+                                try: self.__log = open(self.__file["log"], "w")
                                 except: pass
                                 else:
                                     self.__log.close()
                                     break
 
-                            else: raise CannotCreateFile(self.__file[0])
+                            else: raise CannotCreateFile(self.__file["log"])
 
                         # ---------------------------------- Creating logs.log file  ----------------------------------
 
-                        if not os.path.exists(self.__file[0]):
-                            self.__missing_file.append(self.__file[0])
+                        if not os.path.exists(self.__file["log"]):
+                            self.__missing_file.append(self.__file["log"])
 
                             for i in range(self.__TRIES):
-                                try: self.__log = open(self.__file[0], "w")
+                                try: self.__log = open(self.__file["log"], "w")
                                 except: pass
                                 else:
                                     self.__log.close()
                                     break
 
-                            else: raise CannotCreateFile(self.__file[0])
-
-                        # ------------------------------------- Opening logs file -------------------------------------
-
-                        for i in range(self.__TRIES):
-                            try: self.__log = open(self.__file[0], "a")
-                            except: pass
-                            else: break
-
-                        else: raise CannotCreateFile(self.__file[0])
-
+                            else: raise CannotCreateFile(self.__file["log"])
+                        
                         # -------------------------------- Opening data/dirs.pkl file ---------------------------------
 
-                        for i in range(self.__TRIES):
-                            try: self.__directory_list = open(self.__file[1], "rb")
-                            except: pass
-                            else:
-                                for i in range(self.__TRIES):
-                                    try:
-                                        for dir in pickle.load(self.__directory_list):
-                                            self.__directory.append(dir)
-                                    except: pass
-                                    else:
-                                        self.__directory_list.close()
-                                        break
-
-                                else:
-                                    self.__log.write(self.__make_log(err = "0x1E", arg = self.__file[1]))
-                                    os.remove(self.__file[1])
-
-                                break
-
-                        else:
-                            self.__log.write(self.__make_log(err = "0x1E", arg = self.__file[1]))
-                            os.remove(self.__file[1])
-
-                        # -------------------------------- Opening data/files.pkl file --------------------------------
-
-                        for i in range(self.__TRIES):
-                            try: self.__file_list = open(self.__file[2], "rb")
-                            except: pass
-                            else:
-
-                                for i in range(self.__TRIES):
-                                    try:
-                                        for file in pickle.load(self.__file_list):
-                                            self.__file.append(file)
-                                    except: pass
-                                    else:
-                                        self.__file_list.close()
-                                        break
-
-                                else:
-                                    self.__log.write(self.__make_log(err = "0x1E", arg = self.__file[2]))
-                                    os.remove(self.__file[2])
-
-                                break
-
-                        else:
-                            self.__log.write(self.__make_log(err = "0x1E", arg = self.__file[2]))
-                            os.remove(self.__file[2])
+                        if os.path.exists(self.__file["dirstructure"]):
+                            try:
+                                with open(self.__file["dirstructure"], "rb") as f:
+                                    self.__directory = pickle.load(f)
+                            except:
+                                self.__create_log(err = "0xD", arg = "Cannot read the data/dirs.pkl file.")
+                                self.__create_log(arg = f"The {self.__file['dirstructure']} has been restored to default.")
+                                os.remove(self.__file["dirstructure"])
 
                         # -------------------------------- Scanning Project Directory ---------------------------------
 
                         for e in os.listdir("."):
                             if os.path.isfile(str(e)):
-                                if not str(e) in self.__file: self.__file.append(str(e))
+                                if not str(e) in self.__file: self.__file[str(e)] = str(e)
                             elif os.path.isdir(str(e)):
-                                if not str(e) in self.__directory: self.__directory.append(str(e))
+                                if not str(e) in self.__directory: self.__directory[str(e)] = str(e)
 
-                        for d in self.__directory:
+                        temp_dict = self.__directory.copy()
+                        
+                        for d in temp_dict:
                             if os.path.exists(str(d)):
                                 for e in os.listdir(str(d)):
 
                                     if os.path.isfile("{}/{}".format(str(d), str(e))):
                                         if not "{}/{}".format(str(d), str(e)) in self.__file:
-                                            self.__file.append("{}/{}".format(str(d), str(e)))
+                                            self.__file["{}/{}".format(str(d), str(e))] = "{}/{}".format(str(d), str(e))
 
-                                        elif os.path.isdir("{}/{}".format(str(d), str(e))):
-                                            if not "{}/{}".format(str(d), str(e)) in self.__directory:
-                                                self.__directory.append("{}/{}".format(str(d), str(e)))
-                                            else:
-                                                self.log.write(self.__make_dump_log("0x3", str(d)))
-
-                        # ------------------------- Deleting duplicated content from the list -------------------------
-
-                        self.__directory = list(dict.fromkeys(self.__directory))
-                        self.__file = list(dict.fromkeys(self.__file))
+                                    elif os.path.isdir("{}/{}".format(str(d), str(e))):
+                                        
+                                        if not "{}/{}".format(str(d), str(e)) in self.__directory:
+                                            self.__directory["{}/{}".format(str(d), str(e))] = "{}/{}".format(str(d), str(e))
+                                            self.__create_log(err = "0x3", arg = "{}/{}".format(str(d), str(e)))
+                                                                    
+                        del temp_dict           
 
                         # ----------------------------- Adding missing directoris to list -----------------------------
 
                         for dir in self.__directory:
-                            if not os.path.exists(dir):
-                                self.__missing_directory.append(dir)
+                            if not os.path.exists(self.__directory[dir]):
+                                self.__missing_directory.append(self.__directory[dir])
 
                         for file in self.__file:
-                            if not os.path.exists(file):
-                                self.__missing_file.append(file)
+                            if not os.path.exists(self.__file[file]):
+                                self.__missing_file.append(self.__file[file])
 
-                        # -------------------------------- Creating missing directoris --------------------------------
+                        # -------------------------------- Adding missing files to list -------------------------------
 
                         while len(self.__missing_directory) > 0:
-                            self.__log.write(self.__make_log(err = "0x3", arg = self.__missing_directory[0]))
+                            self.__create_log(err = "0x3", arg = self.__missing_directory[0])
 
-                            for i in range(self.__TRIES):
-                                try: os.makedirs(self.__missing_directory[0])
-                                except: pass
-                                else: break
+                            if not os.path.exists(self.__missing_directory[0]):
+                                for i in range(self.__TRIES):
+                                    try: os.makedirs(self.__missing_directory[0])
+                                    except: pass
+                                    else: break
 
-                            else: raise CannotCreateDirectory(self.__missing_directory[0])
+                                else: raise CannotCreateDirectory(self.__missing_directory[0])
 
                             self.__missing_directory.pop(0)
 
-                        # ---------------------------------- Creating missing files -----------------------------------
-
                         while len(self.__missing_file) > 0:
-                            self.__log.write(self.__make_log(err = "0x2", arg = self.__missing_file[0]))
-
-                            for i in range(self.__TRIES):
-                                try: temp = open(self.__missing_file[0], "w")
-                                except: pass
-                                else:
-                                    temp.close()
-                                    del temp
-                                    break
-
-                            else: raise CannotCreateDirectory(self.__missing_file[0])
-
+                            self.__create_log(err = "0x2", arg = self.__missing_file[0])
                             self.__missing_file.pop(0)
 
-                        # --------------------- Saving info about data in project folder to files ---------------------
+                        # ------------------- Saving info about structure in project folder to file -------------------
 
-                        with open(str(self.__file[1]), "wb") as f:
+                        with open("data/dirs.pkl", "wb") as f:
                             pickle.dump(self.__directory, f)
 
-                        with open(str(self.__file[2]), "wb") as f:
-                            pickle.dump(self.__file, f)
-
                     else: pass
-
-            def stop(self, reason):
-                self.__IS_RUNNING = False
-
-                with open(str(self.__file[0]), "a") as f:
-                    f.write(str(self.__make_log(lvl = "info", err = "0x0", arg = str(f"Thread stopped. Reason: {reason}"))))
-
-            def resume(self):
-                self.__IS_RUNNING = True
-
-                with open(str(self.__file[0]), "a") as f:
-                    f.write(str(self.__make_log(lvl = "info", err = "0x0", arg = str("Thread resumed"))))
-
-            def status(self):
-                return self.__IS_RUNNING
 
         self.Thread = ThreadClass()
         self.Thread.start()
