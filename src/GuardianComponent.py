@@ -101,7 +101,7 @@ class CannotInstallIntagratedModule(Exception):
 class GuardianClass:
     def __create_log(self, lvl = "warning", err = "0x0", arg = "None"):
         """
-        Message format assistant
+        Logger function.
 
         Args: 
             lvl (str): Log level.
@@ -137,7 +137,7 @@ class GuardianClass:
 
         self.__directory                =           {
             "data":                     "data", 
-            "data":                     "data/database",
+            "database":                     "data/database",
             "backup":                   "data/backup",
             "config":                   "config"
         }
@@ -349,7 +349,7 @@ class GuardianClass:
         class ThreadClass(threading.Thread):
             def __create_log(self, lvl = "warning", err = "0x0", arg = "None"):
                 """
-                Message format assistant
+                Logger function.
 
                 Args: 
                     lvl (str): Log level.
@@ -386,7 +386,7 @@ class GuardianClass:
 
                 self.__directory                =           {
                     "data":                     "data", 
-                    "data":                     "data/database",
+                    "database":                 "data/database",
                     "backup":                   "data/backup",
                     "config":                   "config"
                 }
@@ -432,22 +432,15 @@ class GuardianClass:
                 # ------------------------------------------- Thread Config -------------------------------------------
 
                 self.__config = configparser.ConfigParser()
-
-                if not self.__config.has_section("SETTINGS"): 
-                    self.__create_log(err = "0xD", arg = "The 'SETTINGS' section could not be found in config file.")
-                    self.__create_config()
                 
-                else:
-                    try:
-                        self.__config.read(self.__file["config"])
-                        self.__SLEEP_TIME = self.__config["SETTINGS"].getfloat("timeaftercycle")
-                        self.__TRIES = self.__config["SETTINGS"].getint("numberoftries")
-                    
-                    except: 
-                        self.__create_log(err = "0xD", arg = "Cannot read the config file.")
-                        self.__create_config()
-                        self.__create_log(arg = f"The {self.__file['config']} has been restored to default.")
-
+                try:
+                    self.__config.read(self.__file["config"])
+                    self.__SLEEP_TIME = self.__config["SETTINGS"].getfloat("timeaftercycle")
+                    self.__TRIES = self.__config["SETTINGS"].getint("numberoftries")
+                except: 
+                    self.__create_log(err = "0xD", arg = "Cannot read the config file.")
+                    self.__create_config()
+                    self.__create_log(arg = f"The {self.__file['config']} has been restored to default.")
 
             def run(self):
                 self.__IS_RUNNING = True
@@ -456,7 +449,6 @@ class GuardianClass:
                     time.sleep(self.__SLEEP_TIME)
 
                     if self.__IS_RUNNING:
-                        print(self.__directory)
 
                         # ---------------------------- Creating data folder with log file  ----------------------------
 
@@ -482,7 +474,7 @@ class GuardianClass:
 
                             else: raise CannotCreateFile(self.__file["log"])
 
-                        # ------------------------------------------ Creating logs.log file  ------------------------------------------
+                        # ---------------------------------- Creating logs.log file  ----------------------------------
 
                         if not os.path.exists(self.__file["log"]):
                             self.__missing_file.append(self.__file["log"])
@@ -515,7 +507,9 @@ class GuardianClass:
                             elif os.path.isdir(str(e)):
                                 if not str(e) in self.__directory: self.__directory[str(e)] = str(e)
 
-                        for d in self.__directory:
+                        temp_dict = self.__directory.copy()
+                        
+                        for d in temp_dict:
                             if os.path.exists(str(d)):
                                 for e in os.listdir(str(d)):
 
@@ -523,16 +517,13 @@ class GuardianClass:
                                         if not "{}/{}".format(str(d), str(e)) in self.__file:
                                             self.__file["{}/{}".format(str(d), str(e))] = "{}/{}".format(str(d), str(e))
 
-                                        elif os.path.isdir("{}/{}".format(str(d), str(e))):
-                                            if not "{}/{}".format(str(d), str(e)) in self.__directory:
-                                                self.__directory["{}/{}".format(str(d), str(e))] = "{}/{}".format(str(d), str(e))
-                                            else:
-                                                self.__create_log(err = "0x3", arg = str(d))
-
-                        # ------------------------- Deleting duplicated content from the dictionary -------------------------
-
-                        self.__directory = {k: v for k, v in self.__directory.items() if v not in self.__directory.values()}
-                        self.__file = {k: v for k, v in self.__file.items() if v not in self.__file.values()}                        
+                                    elif os.path.isdir("{}/{}".format(str(d), str(e))):
+                                        
+                                        if not "{}/{}".format(str(d), str(e)) in self.__directory:
+                                            self.__directory["{}/{}".format(str(d), str(e))] = "{}/{}".format(str(d), str(e))
+                                            self.__create_log(err = "0x3", arg = "{}/{}".format(str(d), str(e)))
+                                                                    
+                        del temp_dict           
 
                         # ----------------------------- Adding missing directoris to list -----------------------------
 
@@ -544,7 +535,7 @@ class GuardianClass:
                             if not os.path.exists(self.__file[file]):
                                 self.__missing_file.append(self.__file[file])
 
-                        # --------------------------------------- Adding missing files to list ----------------------------------------
+                        # -------------------------------- Adding missing files to list -------------------------------
 
                         while len(self.__missing_directory) > 0:
                             self.__create_log(err = "0x3", arg = self.__missing_directory[0])
@@ -563,31 +554,12 @@ class GuardianClass:
                             self.__create_log(err = "0x2", arg = self.__missing_file[0])
                             self.__missing_file.pop(0)
 
-                        # --------------------- Saving info about data in project folder to files ---------------------
+                        # ------------------- Saving info about structure in project folder to file -------------------
 
-                        # write self.__directory to data/dirstructure.pkl
                         with open("data/dirs.pkl", "wb") as f:
                             pickle.dump(self.__directory, f)
 
-                        
-
-
                     else: pass
-
-            def stop(self, reason):
-                self.__IS_RUNNING = False
-
-                with open(str(self.__file[0]), "a") as f:
-                    f.write(str(self.__make_log(lvl = "info", err = "0x0", arg = str(f"Thread stopped. Reason: {reason}"))))
-
-            def resume(self):
-                self.__IS_RUNNING = True
-
-                with open(str(self.__file[0]), "a") as f:
-                    f.write(str(self.__make_log(lvl = "info", err = "0x0", arg = str("Thread resumed"))))
-
-            def status(self):
-                return self.__IS_RUNNING
 
         self.Thread = ThreadClass()
         self.Thread.start()
