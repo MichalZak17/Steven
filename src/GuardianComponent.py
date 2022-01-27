@@ -130,6 +130,9 @@ class GuardianClass:
         with open(PATH_CONFIG, "w") as f:
             self.__config.write(f)
 
+        
+        self.__create_log(arg = f"The {self.__file['config']} has been restored to default.")
+
     def __init__(self):
         self.__missing_file             =           []
         self.__missing_directory        =           []
@@ -193,7 +196,7 @@ class GuardianClass:
 
         self.__TRIES                    =           5
 
-        # ------------------------------------ Creating data folder with log file  ------------------------------------
+        # --------------------------- Creating data folder with log file if doesn't exists  ---------------------------
 
         if not os.path.exists(self.__directory["data"]):
             self.__missing_directory.append(self.__directory["data"])
@@ -217,7 +220,7 @@ class GuardianClass:
 
             else: raise CannotCreateFile(self.__file["log"])
 
-        # ------------------------------------------ Creating logs.log file  ------------------------------------------
+        # ---------------------------------- Creating logs.log file if doesn't exists ---------------------------------
 
         if not os.path.exists(self.__file["log"]):
             self.__missing_file.append(self.__file["log"])
@@ -231,7 +234,7 @@ class GuardianClass:
 
             else: raise CannotCreateFile(self.__file["log"])
 
-        # ------------------------------------------ Checking config folder  ------------------------------------------
+        # --------------------------------- Creating config folder if doesn't exists  ---------------------------------
 
         if not os.path.exists(self.__directory["config"]):
             self.__missing_directory.append(self.__directory["config"])
@@ -244,36 +247,29 @@ class GuardianClass:
 
             else: raise CannotCreateDirectory(self.__directory["config"])
 
-        # -------------------------------------------- Reading config file --------------------------------------------
+        # ------------------------------------ Creating config.ini file if missing ------------------------------------
 
         self.__config = configparser.ConfigParser()
 
         if not os.path.exists(self.__file["config"]):
             self.__missing_file.append(self.__file["config"])
-            self.__create_log(err = "0x2", arg = self.__file["config"])
-
             self.__modules = self.__default_modules
             self.__create_config()
 
-            self.__create_log(arg = f"The {self.__file['config']} has been restored to default.")
-
-        # -------------------------------------- Creating config file if missing --------------------------------------
+        # ---------------------------------- Reading parameters from config.ini file ----------------------------------
 
         else:
             try:
                 self.__config.read(self.__file["config"])
                 self.__modules = self.__config["MODULES"]["modules"][1:-1].split(", ")
 
-                for i in range(len(self.__modules)):
-                    self.__modules[i] = self.__modules[i][1:-1]
+                for i in range(len(self.__modules)): self.__modules[i] = self.__modules[i][1:-1]
 
             except: 
                 self.__create_log(err = "0xD", arg = self.__file["config"])
-
                 self.__modules = self.__default_modules
                 self.__create_config()
                 
-                self.__create_log(arg = f"The {self.__file['config']} has been restored to default.")
      
         # ---------------------------------- Importing import_module from importlib -----------------------------------
 
@@ -377,6 +373,8 @@ class GuardianClass:
 
                 with open(PATH_CONFIG, "w") as f:
                     self.__config.write(f)
+                
+                self.__create_log(arg = f"The {self.__file['config']} has been restored to default.")
             
             def __init__(self):
                 threading.Thread.__init__(self)
@@ -424,7 +422,6 @@ class GuardianClass:
                     "progressbar"
                 ]
                 
-
                 self.__IS_RUNNING               =           False
                 self.__SLEEP_TIME               =           5
                 self.__TRIES                    =           5
@@ -438,15 +435,13 @@ class GuardianClass:
                     self.__SLEEP_TIME = self.__config["SETTINGS"].getfloat("timeaftercycle")
                     self.__TRIES = self.__config["SETTINGS"].getint("numberoftries")
                 except: 
-                    self.__create_log(err = "0xD", arg = "Cannot read the config file.")
+                    self.__create_log(err = "0xD", arg = self.__file["config"])
                     self.__create_config()
-                    self.__create_log(arg = f"The {self.__file['config']} has been restored to default.")
 
             def run(self):
                 self.__IS_RUNNING = True
 
                 while True:
-                    time.sleep(self.__SLEEP_TIME)
 
                     if self.__IS_RUNNING:
 
@@ -495,9 +490,9 @@ class GuardianClass:
                                 with open(self.__file["dirstructure"], "rb") as f:
                                     self.__directory = pickle.load(f)
                             except:
-                                self.__create_log(err = "0xD", arg = "Cannot read the data/dirs.pkl file.")
-                                self.__create_log(arg = f"The {self.__file['dirstructure']} has been restored to default.")
+                                self.__create_log(err = "0xD", arg = self.__file["dirstructure"])
                                 os.remove(self.__file["dirstructure"])
+                                self.__create_log(arg = f"The {self.__file['dirstructure']} has been restored to default.")
 
                         # -------------------------------- Scanning Project Directory ---------------------------------
 
@@ -559,7 +554,17 @@ class GuardianClass:
                         with open("data/dirs.pkl", "wb") as f:
                             pickle.dump(self.__directory, f)
 
-                    else: pass
+                    else: pass                
+                
+                    time.sleep(self.__SLEEP_TIME)
+
+            def thread_start(self):
+                self.__create_log(arg = "Thread has been started")
+                self.__IS_RUNNING = True
+
+            def thread_stop(self):
+                self.__create_log(arg = "Thread has been stopped")
+                self.__IS_RUNNING = False
 
         self.Thread = ThreadClass()
         self.Thread.start()
