@@ -5,27 +5,23 @@ import importlib
 
 # ------------------------------------------------- Custom exceptions -------------------------------------------------
 
-class CannotCreateDirectory(Exception):
-    """
-    Exception class for creating directory.
-
-    Args:
-        arg (str): Directory name.        
-    """
+class FileNotFound(Exception):
     def __init__(self, arg):
         self.arg = str(arg)
         super().__init__(self.arg)
 
     def __str__(self):
-        return f" -> The '{self.arg}' directory cannot be created."
+        return f" -> The '{self.arg}' file has been not found."
 
-class CannotCreateFile(Exception):
-    """
-    Exception class for creating file.
+class FileCorrupted(Exception):
+    def __init__(self, arg):
+        self.arg = str(arg)
+        super().__init__(self.arg)
 
-    Args:
-        arg (str): File name.
-    """
+    def __str__(self):
+        return f" -> The '{self.arg}' file has been corrupted."
+
+class FileCannotBeCreated(Exception):
     def __init__(self, arg):
         self.arg = str(arg)
         super().__init__(self.arg)
@@ -34,88 +30,91 @@ class CannotCreateFile(Exception):
         return f" -> The '{self.arg}' file cannot be created."
 
 class DirectoryNotFound(Exception):
-    """
-    Exception class for directory check.
-
-    Args:
-        arg (str): Directory name.
-    """
     def __init__(self, arg):
         self.arg = str(arg)
         super().__init__(self.arg)
 
     def __str__(self):
-        return f" -> The '{self.arg}' directory doesn't exist."
+        return f" -> The '{self.arg}' directory has been not found."
 
-class FileNotFound(Exception):
-    """
-    Exception class for file check.
-    
-    Args:
-        arg (str): File name.
-    """
+class DirectoryCannotBeCreated(Exception):
     def __init__(self, arg):
         self.arg = str(arg)
         super().__init__(self.arg)
 
     def __str__(self):
-        return f" -> The '{self.arg}' file doesn't exist."
+        return f" -> The '{self.arg}' directory cannot be created."
 
-class ModuleImportFailure(Exception):
-    """
-    Exception class for module import failure.
-
-    Args:
-        arg (str): Module name.
-    """
+class ModuleCannotBeImported(Exception):
     def __init__(self, arg):
         self.arg = str(arg)
         super().__init__(self.arg)
 
     def __str__(self):
-        return f" -> The attempt to import '{self.arg}' module failed."
+        return f" -> The '{self.arg}' module cannot be imported."
 
-class CannotInstallIntagratedModule(Exception):
-    """
-    Exception class for integrated module failure.
-    
-    Args:
-        arg (str): Module name.
-    """
+class ModuleCannotBeReloaded(Exception):
     def __init__(self, arg):
         self.arg = str(arg)
         super().__init__(self.arg)
 
     def __str__(self):
-        return f" -> The '{self.arg}' module is integrated and cannot be installed."
+        return f" -> The '{self.arg}' module cannot be reloaded."
 
-class CannotCreateLog(Exception):
-    """
-    Exception class for creating log.
-
-    Args:
-        arg (str): Log name.
-    """
+class ModuleCannotBeInstalled(Exception):
     def __init__(self, arg):
         self.arg = str(arg)
         super().__init__(self.arg)
 
     def __str__(self):
-        return f" -> The log to '{self.arg}' file cannot be created."
+        return f" -> The '{self.arg}' module cannot be installed."
 
-class InvalidThreadMode(Exception):
-    """
-    Exception class for invalid thread mode.
-
-    Args:
-        arg (str): Thread mode.
-    """
+class ModuleCannotBeUninstalled(Exception):
     def __init__(self, arg):
         self.arg = str(arg)
         super().__init__(self.arg)
 
     def __str__(self):
-        return f" -> The '{self.arg}' thread mode is invalid."
+        return f" -> The '{self.arg}' module cannot be uninstalled."
+
+class ModuleIsIntegrated(Exception):
+    def __init__(self, arg):
+        self.arg = str(arg)
+        super().__init__(self.arg)
+
+    def __str__(self):
+        return f" -> The '{self.arg}' module is integrated."
+
+class InvalidModeException(Exception):
+    def __init__(self, arg):
+        self.arg = str(arg)
+        super().__init__(self.arg)
+
+    def __str__(self):
+        return f" -> The '{self.arg}' mode is invalid."
+
+class InvalidParameterException(Exception):
+    def __init__(self, arg):
+        self.arg = str(arg)
+        super().__init__(self.arg)
+
+    def __str__(self):
+        return f" -> The '{self.arg}' parameter is invalid."
+
+class LogCannotBeCreated(Exception):
+    def __init__(self, arg):
+        self.arg = str(arg)
+        super().__init__(self.arg)
+
+    def __str__(self):
+        return f" -> The '{self.arg}' log file cannot be created."
+
+class LogMessageCannotBeCreated(Exception):
+    def __init__(self):
+        super().__init__(self)
+
+    def __str__(self):
+        return f" -> The log message cannot be created."
 
 # --------------------------------------------------------------------------------------------------------------------- 
 
@@ -134,7 +133,8 @@ class GuardianClass:
         }
         self.__file                     =           {
             "log":                      "data/logs.log",
-            "config":                   "config/config.ini"
+            "config":                   "config/config.ini",
+            "dirstruct":                "data/dirstruct.structure"
         }
 
         self.__modules_default          =           {
@@ -177,27 +177,49 @@ class GuardianClass:
 
         self.__TRIES                    =           5
 
-    def __create_log(self, lvl = "info", code = "KERNEL", err = "0x0", arg = "None") -> None:
+        self.__THREAD_RUNNING           =           False
+        self.__THREAD_TIMEOUT           =           5
+
+    def __create_log(self, lvl = "info", err = "0x0", arg = "None") -> None:
         """
-        Simple logger function for GuardianClass opertaions.
+        Logger function for GuardianClass separated opertaions.
 
         Args: 
-            lvl (str): Log type.
-            err (str): Error code.
-            arg (str): Argument.
+            lvl (str, optional): Log type.
+            err (str, optional): Error code.
+            arg (str, optional): Argument.
 
+        Levels:
+            info: Information.
+            warning: Warning.
+            error: Error.
+            emergency: Emergency.
+            alert: Alert.
+            critical: Critical.
+            debug: Debug.
+            notice: Notice.
         """
-        __caller_temp = inspect.getouterframes(inspect.currentframe(), 4)
-        __caller = f"{__caller_temp[1][1]}.{__caller_temp[1][3]}()"
+        __levels = [
+            "emergency", "alert", "critical", "error",
+            "warning", "notice", "info", "debug"
+        ]
+
+        if lvl not in __levels: raise InvalidModeException(lvl)
+
+        try: 
+            __caller_temp = inspect.getouterframes(inspect.currentframe(), 4)
+            __caller = f"{__caller_temp[1][1]}.{__caller_temp[1][3]}()"
+        except: raise LogMessageCannotBeCreated()
 
         try:
             with open(self.__file["log"], "a") as log:
                 log.write(f"{lvl.upper()}; {__caller}; {datetime.datetime.now()}; {err}; {arg}; \n")
-        except: CannotCreateLog(self.__file["log"])
+        except: LogCannotBeCreated(self.__file["log"])
 
     def __import_module(self, module = "None", install = False) -> None:
         """
-        Import module function.
+        Imports a specified module. If the module is not installed, 
+        it will be installed if the install parameter is True.
         
         Args:
             module (str): Module name.
@@ -205,24 +227,21 @@ class GuardianClass:
         """
         try: globals()[module] = importlib.import_module(module)
         except:
-            if install:
-                if not module in self.__modules_integrated:
-                    try: os.system(f"pip3 install {self.__missing_module}")
-                    except: self.__create_log("error", "0x1F", self.__missing_module)
-                    else: 
-                        try: globals()[self.__missing_module] = importlib.import_module(self.__missing_module)
-                        except: self.__create_log("error", "0x1B", self.__missing_module)
-                        else: self.__create_log(arg = f"The {self.__missing_module} module has been installed")
+            if not install: self.__create_log(lvl = "warning", err = "0x1B", arg = module)
+            if module in self.__modules_integrated: self.__create_log(lvl = "warning", err = "0x1E", arg = module)
 
-                else: self.__create_log("warning", "0x1E", f"The {module} module is integrated and cannot be installed")
-
-            else: self.__create_log("critical", "0x1B", f"The {module} module cannot be imported")
-
+            try: os.system(f"pip3 install {module}")
+            except: self.__create_log(lvl = "error", err = "0x1F", arg = module)
+            else: 
+                try: globals()[module] = importlib.import_module(module)
+                except: self.__create_log(lvl = "error", err = "0x1B", arg = module)
+            
         else: self.__create_log(arg = f"The {module} module has been imported")
 
     def __check_file(self, file = "None", log = True) -> bool:
         """
-        Check if file exists.
+        Check if file exists. If not return False. True otherwise.
+        May log the file name if log parameter is True.
         
         Args:
             file (str): File name.
@@ -232,14 +251,16 @@ class GuardianClass:
             bool: True if file exists, False otherwise.
         """
         if not os.path.exists(file):
-            if log: self.__create_log("warning", "0x4", file)
+            if log: self.__create_log(lvl = "warning", err =  "0x4", arg = file)
             return False
 
         else: return True
     
     def __check_dir(self, dir = "None", create = True, log = True) -> bool:
         """
-        Check if directory exists.
+        Check if directory exists. If not return False. True otherwise.
+        May create the directory if create parameter is True.
+        May log the directory name if log parameter is True.
         
         Args:
             dir (str): Directory path.
@@ -250,7 +271,7 @@ class GuardianClass:
             bool: True if directory exists, False otherwise.
         """
         if not os.path.exists(dir):
-            if log: self.__create_log("warning", "0x5", dir)
+            if log: self.__create_log(lvl = "warning", err = "0x5", arg = dir)
 
             if create:
                 for i in range(self.__TRIES):
@@ -261,8 +282,8 @@ class GuardianClass:
                         break
 
                 else: 
-                    if log: self.__create_log("error", "0x20", dir)
-                    raise CannotCreateDirectory(dir)
+                    if log: self.__create_log(lvl = "error", err = "0x20", arg = dir)
+                    raise DirectoryCannotBeCreated(dir)
             
             return False
 
@@ -270,13 +291,13 @@ class GuardianClass:
     
     def __reload_module(self, module = "None") -> None:
         """
-        Reload module.
+        Reloads a specified module.
 
         Args:
             module (str): Module name.
         """
         try: importlib.reload(globals()[module])
-        except: self.__create_log("error", "0x1C", f"The {module} module cannot be reloaded")
+        except: self.__create_log(lvl = "error", err = "0x1C", arg = module)
         else: self.__create_log(arg = f"The {module} module has been reloaded")
 
     def configure(self, mode = "default") -> None:
@@ -292,7 +313,7 @@ class GuardianClass:
                 except: pass
                 else: break
 
-            else: raise CannotCreateDirectory(self.__directory["data"])
+            else: raise DirectoryCannotBeCreated(self.__directory["data"])
 
             for i in range(self.__TRIES):
                 try: self.__log = open(self.__file["log"], "w")
@@ -301,11 +322,12 @@ class GuardianClass:
                     self.__log.close()
                     break
 
-            else: raise CannotCreateFile(self.__file["log"])
+            else: raise FileCannotBeCreated(self.__file["log"])
             
-            self.__create_log("warning", "0x5", self.__directory["data"])
+            self.__create_log(lvl = "warning", err = "0x5", arg = self.__directory["data"])
             self.__create_log(arg = f"The {self.__directory['data']} has been created")
-            self.__create_log("warning", "0x4", self.__file["log"])
+
+            self.__create_log(lvl = "warning", err = "0x4", arg = self.__file["log"])
             self.__create_log(arg = f"The {self.__file['log']} has been created")
 
         if not os.path.exists(self.__file["log"]):
@@ -316,9 +338,9 @@ class GuardianClass:
                     self.__log.close()
                     break
 
-            else: raise CannotCreateFile(self.__file["log"])
+            else: raise FileCannotBeCreated(self.__file["log"])
  
-            self.__create_log("warning", "0x4", self.__file["log"])
+            self.__create_log(lvl = "warning", err = "0x4", arg = self.__file["log"])
             self.__create_log(arg = f"The {self.__file['log']} has been created")
 
         for dir in self.__directory:
@@ -328,7 +350,7 @@ class GuardianClass:
             for module in self.__modules_default:
                 try: globals()[module] = importlib.import_module(module)
                 except: 
-                    self.__create_log("error", "0x19", module)
+                    self.__create_log(lvl = "error", err = "0x19", arg = module)
                     self.__missing_module.append(module)
 
             for module in os.listdir("src"):
@@ -336,8 +358,8 @@ class GuardianClass:
                     if module[-3:] == ".py" and not module == "__init__.py" and not module == "GuardianComponent.py":
                         try: globals()[module[:-3]] = importlib.import_module("src", module[:-3])
                         except: 
-                            self.__create_log(err = "0x1A", arg = module[:-3])
-                            raise ModuleImportFailure(module[:-3])
+                            self.__create_log(lvl = "critical", err = "0x1A", arg = module[:-3])
+                            raise ModuleCannotBeImported(module[:-3])
 
             if len(self.__missing_module):
                 self.__create_log(arg = "Initializing modules installation")
@@ -360,14 +382,129 @@ class GuardianClass:
                                     break
                         
                         else: 
-                            self.__create_log("critical", "0x1B", self.__missing_module[0])
-                            raise ModuleImportFailure(self.__missing_module[0])
+                            self.__create_log(lvl = "critical", err = "0x1B", arg = self.__missing_module[0])
+                            raise ModuleCannotBeInstalled(self.__missing_module[0])
 
                     else: 
-                        self.__create_log("critical", "0x1E", f"The {self.__missing_module[0]} module has been integrated and cannot be installed")
-                        raise CannotInstallIntagratedModule(self.__missing_module[0])                  
+                        self.__create_log(lvl = "critical", err = "0x1E", arg = self.__missing_module[0])
+                        raise ModuleIsIntegrated(self.__missing_module[0])                  
 
         elif mode == "safe":
+            self.__create_log(arg = "Initializing safe mode configuration")
+
             for module in self.__modules_integrated:
                 try: globals()[module] = importlib.import_module(module)
-                except: raise ModuleImportFailure(module)
+                except: raise ModuleCannotBeImported(module)
+
+    # ------------------------------------------- Thread Controller Section -------------------------------------------
+
+    def init_thread(self):
+        self.__create_log(arg = "Initializing thread")
+        self.__THREAD_RUNNING = True
+
+    def ThreadSystem(self):
+        self.__create_log(arg = "Starting thread")
+        while True:
+            time.sleep(self.__THREAD_TIMEOUT)
+
+            if self.__THREAD_RUNNING:
+
+                if not os.path.exists(self.__directory["data"]):
+                    for i in range(self.__TRIES):
+                        try: os.makedirs(self.__directory["data"])
+                        except: pass
+                        else: break
+
+                    else: raise DirectoryCannotBeCreated(self.__directory["data"])
+
+                    for i in range(self.__TRIES):
+                        try: self.__log = open(self.__file["log"], "w")
+                        except: pass
+                        else:
+                            self.__log.close()
+                            break
+
+                    else: raise FileCannotBeCreated(self.__file["log"])
+                    
+                    self.__create_log(lvl = "warning", err = "0x5", arg = self.__directory["data"])
+                    self.__create_log(arg = f"The {self.__directory['data']} has been created")
+
+                    self.__create_log(lvl = "warning", err = "0x4", arg = self.__file["log"])
+                    self.__create_log(arg = f"The {self.__file['log']} has been created")
+
+                if not os.path.exists(self.__file["log"]):
+                    for i in range(self.__TRIES):
+                        try: self.__log = open(self.__file["log"], "w")
+                        except: pass
+                        else:
+                            self.__log.close()
+                            break
+
+                    else: raise FileCannotBeCreated(self.__file["log"])
+        
+                    self.__create_log(lvl = "warning", err = "0x4", arg = self.__file["log"])
+                    self.__create_log(arg = f"The {self.__file['log']} has been created")
+
+                for dir in self.__directory:
+                    self.__check_dir(dir = self.__directory[dir])
+
+                if self.__check_file(self.__file["dirstruct"]):
+                    try:
+                        with open(self.__file["dirstruct"], "rb") as f:
+                            self.__dirstruct = pickle.load(f)
+                    except:
+                        self.__create_log(lvl = "warning", err = "0x16", arg = self.__file["dirstruct"])
+                        os.remove(self.__file["dirstruct"])
+                        self.__create_log(arg = f"The {self.__file['dirstruct']} has been removed")
+                
+                for e in os.listdir("."):
+                    if os.path.isfile(str(e)):
+                        if not str(e) in self.__file: self.__file[str(e)] = str(e)
+                    elif os.path.isdir(str(e)):
+                        if not str(e) in self.__directory: self.__directory[str(e)] = str(e)
+
+                __temp_dict = self.__directory.copy()
+                        
+                for d in __temp_dict:
+                    if os.path.exists(d):
+                        for e in os.listdir(d):
+
+                            if os.path.isfile(f"{d}/{e}"):
+                                if not f"{d}/{e}" in self.__file:
+                                    self.__file[f"{d}/{e}"] = f"{d}/{e}"
+
+                            elif os.path.isdir(f"{d}/{e}"):                                
+                                if not f"{d}/{e}" in self.__directory:
+                                    self.__directory[f"{d}/{e}"] = f"{d}/{e}"
+                                                            
+                del __temp_dict
+
+                for dir in self.__directory:
+                    if not os.path.exists(self.__directory[dir]):
+                        self.__missing_directory.append(self.__directory[dir])
+
+                for file in self.__file:
+                    if not os.path.exists(self.__file[file]):
+                        self.__missing_file.append(self.__file[file])
+
+                while len(self.__missing_directory) > 0:
+                    self.__create_log(lvl = "warning", err = "0x5", arg = self.__missing_directory[0])
+
+                    if not os.path.exists(self.__missing_directory[0]):
+                        for i in range(self.__TRIES):
+                            try: os.makedirs(self.__missing_directory[0])
+                            except: pass
+                            else:
+                                self.__create_log(arg = f"The {self.__missing_directory[0]} has been created")
+                                break
+
+                        else: raise DirectoryCannotBeCreated(self.__missing_directory[0])
+
+                    self.__missing_directory.pop(0)
+
+                while len(self.__missing_file) > 0:
+                    self.__create_log(lvl = "warning", err = "0x4", arg = self.__missing_file[0])
+                    self.__missing_file.pop(0)
+
+                with open(self.__file["dirstruct"], "wb") as f:
+                    pickle.dump(self.__directory, f)
