@@ -160,6 +160,13 @@ class LogCannotBeCreated(Exception):
     def __str__(self):
         return f" -> The '{self.arg}' log file cannot be created."
 
+class LogMessageCannotBeCreated(Exception):
+    def __init__(self):
+        super().__init__(self)
+
+    def __str__(self):
+        return f" -> The log message cannot be created."
+
 
 class CannotOpenDatabase(Exception):
     def __init__(self, arg):
