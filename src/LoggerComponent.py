@@ -213,7 +213,7 @@ class LoggerClass:
         with open(self.__file, self.__mode) as log:
             log.write(self.__format_message("EMERGENCY", self.__facility_names[code], error, self.__encoder(arguments)))
 
-    def alert(self, code = 0, error = "0x0", arguments = "None") -> None:
+    def alert(self, code = 0, error = "0x0", args = "None") -> None:
         """
         Enters logs to the event log file.
 
@@ -223,9 +223,9 @@ class LoggerClass:
             arguments (str, optional): Keeps any additional information. Defaults to "None".
         """
         with open(self.__file, self.__mode) as log:
-            log.write(self.__format_message("ALERT", self.__facility_names[code], error, self.__encoder(arguments)))
+            log.write(self.__format_message("ALERT", self.__facility_names[code], error, self.__encoder(args)))
 
-    def critical(self, code = 0, error = "0x0", arguments = "None") -> None:
+    def critical(self, code = 0, error = "0x0", args = "None") -> None:
         """
         Enters logs to the event log file.
 
@@ -235,9 +235,9 @@ class LoggerClass:
             arguments (str, optional): Keeps any additional information. Defaults to "None".
         """
         with open(self.__file, self.__mode) as log:
-            log.write(self.__format_message("CRITICAL", self.__facility_names[code], error, self.__encoder(arguments)))
+            log.write(self.__format_message("CRITICAL", self.__facility_names[code], error, self.__encoder(args)))
 
-    def error(self, code = 0, error = "0x0", arguments = "None") -> None:
+    def error(self, code = 0, error = "0x0", args = "None") -> None:
         """
         Enters logs to the event log file.
 
@@ -247,9 +247,9 @@ class LoggerClass:
             arguments (str, optional): Keeps any additional information. Defaults to "None".
         """
         with open(self.__file, self.__mode) as log:
-            log.write(self.__format_message("ERROR", self.__facility_names[code], error, self.__encoder(arguments)))
+            log.write(self.__format_message("ERROR", self.__facility_names[code], error, self.__encoder(args)))
 
-    def warning(self, code = 0, error = "0x0", arguments = "None") -> None:
+    def warning(self, code = 0, error = "0x0", args = "None") -> None:
         """
         Enters logs to the event log file.
 
@@ -259,9 +259,9 @@ class LoggerClass:
             arguments (str, optional): Keeps any additional information. Defaults to "None".
         """
         with open(self.__file, self.__mode) as log:
-            log.write(self.__format_message("WARNING", self.__facility_names[code], error, self.__encoder(arguments)))
+            log.write(self.__format_message("WARNING", self.__facility_names[code], error, self.__encoder(args)))
 
-    def notice(self, code = 0, error = "0x0", arguments = "None") -> None:
+    def notice(self, code = 0, error = "0x0", args = "None") -> None:
         """
         Enters logs to the event log file.
 
@@ -271,9 +271,9 @@ class LoggerClass:
             arguments (str, optional): Keeps any additional information. Defaults to "None".
         """
         with open(self.__file, self.__mode) as log:
-            log.write(self.__format_message("NOTICE", self.__facility_names[code], error, self.__encoder(arguments)))
+            log.write(self.__format_message("NOTICE", self.__facility_names[code], error, self.__encoder(args)))
 
-    def info(self, code = 0, error = "0x0", arguments = "None") -> None:
+    def info(self, code = 0, error = "0x0", args = "None") -> None:
         """
         Enters logs to the event log file.
 
@@ -283,9 +283,9 @@ class LoggerClass:
             arguments (str, optional): Keeps any additional information. Defaults to "None".
         """
         with open(self.__file, self.__mode) as log:
-            log.write(self.__format_message("INFO", "", error, self.__encoder(arguments)))
+            log.write(self.__format_message("INFO", self.__facility_names[code], error, self.__encoder(args)))
 
-    def debug(self, code = 0, error = "0x0", arguments = "None") -> None:
+    def debug(self, code = 0, error = "0x0", args = "None") -> None:
         """
         Enters logs to the event log file.
 
@@ -295,4 +295,4 @@ class LoggerClass:
             arguments (str, optional): Keeps any additional information. Defaults to "None".
         """
         with open(self.__file, self.__mode) as log:
-            log.write(self.__format_message("DEBUG", "", error, self.__encoder(arguments)))
+            log.write(self.__format_message("DEBUG", self.__facility_names[code], error, self.__encoder(args)))
