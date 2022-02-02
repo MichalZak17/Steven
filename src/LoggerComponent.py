@@ -283,7 +283,7 @@ class LoggerClass:
             arguments (str, optional): Keeps any additional information. Defaults to "None".
         """
         with open(self.__file, self.__mode) as log:
-            log.write(self.__format_message("INFO", "", error, self.__encoder(args)))
+            log.write(self.__format_message("INFO", self.__facility_names[code], error, self.__encoder(args)))
 
     def debug(self, code = 0, error = "0x0", args = "None") -> None:
         """
@@ -295,4 +295,4 @@ class LoggerClass:
             arguments (str, optional): Keeps any additional information. Defaults to "None".
         """
         with open(self.__file, self.__mode) as log:
-            log.write(self.__format_message("DEBUG", "", error, self.__encoder(args)))
+            log.write(self.__format_message("DEBUG", self.__facility_names[code], error, self.__encoder(args)))
