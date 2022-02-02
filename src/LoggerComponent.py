@@ -14,39 +14,12 @@ The basic classes defined by the module, together with their functions, are list
 """
 
 import os
+import inspect
 import datetime
 from .ExceptionsComponent import *
 
 class LoggerClass:
-    def __make_log(self, lvl = "warning", err = "0x0", arg = "None", date = True):
-        """
-        Returns a text message that is written to the event log as a log.
-
-        Args:
-            lvl (str, optional): Stores information about the login level. Defaults to "warning".
-            err (str, optional): Stores information about the error code. Defaults to "0x0".
-            arg (str, optional): Stores information about any additional information regarding the log. Defaults to "None".
-            date (bool, optional): Stores information about whether the exact date is to be included in the log. Defaults to True.
-
-        Returns:
-            str: Returns a text message that is written to the event log as a log.
-        """
-
-        part_one    = f"{str(lvl).upper()}; "
-        part_two    = f"{str(datetime.datetime.now())}; "
-        part_three  = f"{str(err)}; "
-        part_four   = f"{str(arg)}; "
-
-        if date:
-            part_one += part_two
-
-        part_one += part_three
-        part_one += part_four
-
-        return f"{part_one}\n"
-
     def __init__(self):
-
         self.__directory = {
             "data": "data"
         }
@@ -95,152 +68,123 @@ class LoggerClass:
         self.LOG_LOCAL5         =       21  # Reserved for local use
         self.LOG_LOCAL6         =       22  # Reserved for local use
         self.LOG_LOCAL7         =       23  # Reserved for local use
-
-        self.__priority_names = {
-            "alert":        self.LOG_ALERT,
-            "crit":         self.LOG_CRITICAL,
-            "critical":     self.LOG_CRITICAL,
-            "debug":        self.LOG_DEBUG,
-            "emerg":        self.LOG_EMERGENCY,
-            "emergency":    self.LOG_EMERGENCY,
-            "err":          self.LOG_ERROR,
-            "error":        self.LOG_ERROR,
-            "info":         self.LOG_INFO,
-            "notice":       self.LOG_NOTICE,
-            "panic":        self.LOG_EMERGENCY,
-            "warn":         self.LOG_WARNING,
-            "warning":      self.LOG_WARNING,
-        }
+        self.LOG_LOCAL8         =       21  # Reserved for local use
+        self.LOG_LOCAL9         =       22  # Reserved for local use
 
         self.__facility_names = {
-            "auth":         self.LOG_AUTH,
-            "authpriv":     self.LOG_AUTHPRIV,
-            "console":      self.LOG_CONSOLE,
-            "cron":         self.LOG_CRON,
-            "daemon":       self.LOG_DAEMON,
-            "ftp":          self.LOG_FTP,
-            "kern":         self.LOG_KERNEL,
-            "lpr":          self.LOG_LPR,
-            "mail":         self.LOG_MAIL,
-            "news":         self.LOG_NEWS,
-            "ntp":          self.LOG_NTP,
-            "security":     self.LOG_SECURITY,
-            "solaris-cron": self.LOG_SOLCRON,
-            "syslog":       self.LOG_SYSLOG,
-            "user":         self.LOG_USER,
-            "uucp":         self.LOG_UUCP,
-            "local0":       self.LOG_LOCAL0,
-            "local1":       self.LOG_LOCAL1,
-            "local2":       self.LOG_LOCAL2,
-            "local3":       self.LOG_LOCAL3,
-            "local4":       self.LOG_LOCAL4,
-            "local5":       self.LOG_LOCAL5,
-            "local6":       self.LOG_LOCAL6,
-            "local7":       self.LOG_LOCAL7,
+            self.LOG_KERNEL:    "KERNEL",
+            self.LOG_USER:      "USER",
+            self.LOG_MAIL:      "MAIL",
+            self.LOG_DAEMON:    "DAEMON",
+            self.LOG_AUTH:      "AUTH",
+            self.LOG_SYSLOG:    "SYSLOG",
+            self.LOG_LPR:       "LPR",
+            self.LOG_NEWS:      "NEWS",
+            self.LOG_UUCP:      "UUCP",
+            self.LOG_CRON:      "CRON",
+            self.LOG_AUTHPRIV:  "AUTHPRIV",
+            self.LOG_FTP:       "FTP",
+            self.LOG_NTP:       "NTP",
+            self.LOG_SECURITY:  "SECURITY",
+            self.LOG_CONSOLE:   "CONSOLE",
+            self.LOG_SOLCRON:   "SOLCRON",
+            self.LOG_LOCAL0:    "LOCAL0",
+            self.LOG_LOCAL1:    "LOCAL1",
+            self.LOG_LOCAL2:    "LOCAL2",
+            self.LOG_LOCAL3:    "LOCAL3",
+            self.LOG_LOCAL4:    "LOCAL4",
+            self.LOG_LOCAL5:    "LOCAL5",
+            self.LOG_LOCAL6:    "LOCAL6",
+            self.LOG_LOCAL7:    "LOCAL7",
+            self.LOG_LOCAL8:    "LOCAL8",
+            self.LOG_LOCAL9:    "LOCAL9"
         }
+        self.__priority_names = {
+            self.LOG_EMERGENCY: "EMERGENCY",
+            self.LOG_ALERT:     "ALERT",
+            self.LOG_CRITICAL:  "CRITICAL",
+            self.LOG_ERROR:     "ERROR",
+            self.LOG_WARNING:   "WARNING",
+            self.LOG_NOTICE:    "NOTICE",
+            self.LOG_INFO:      "INFO",
+            self.LOG_DEBUG:     "DEBUG"
+        }        
 
         # --------------------------------------------------------------------
 
         self.__file             = ""
         self.__mode             = ""
         self.__level            = 0
-        self.__date             = True
+        self.__facility         = 0
         self.__encode           = False
         self.__custom_extension = False
+    
+    def __format_message(self, lvl, code, err, arg):
+        """
+        Returns a text message that is written to the event log as a log.
 
-        # --------------------------------------------------------------------
+        Args:
+            lvl (str): Stores information about the login level. Defaults to "warning".
+            code (int): Stores the error code. Defaults to 0.
+            err (str): Stores information about the error code. Defaults to "0x0".
+            arg (str): Stores information about any additional information regarding the log. Defaults to "None".
 
-    def config(self, file = "logs.log", mode = "a", level = "info", date = True, encode = False, custom_extension = False):
+        Returns:
+            str: Returns a text message that is written to the event log as a log.
+        """
+        __caller_temp = inspect.getouterframes(inspect.currentframe(), 4)
+        __caller = f"{__caller_temp[1][1]}.{__caller_temp[1][3]}()"
+
+        try: return f"{lvl.upper()}; {__caller}; {datetime.datetime.now()}; {code}; {err}; {arg}; \n"
+        except: raise LogMessageCannotBeCreated()
+
+    def configure(self, file = "logs.log", mode = "a", encode = False, custom_extension = False):
         """
         Logger configuration to define basic elements of the log.
 
         Args:
-            file (str, optional): Defines the path to log file. Defaults to "logs.log".
+            file (str, optional): Defines the path to log file in "data" folder. Defaults to "logs.log".
             mode (str, optional): Defines the file type of opening and writing to the file. Defaults to "a".
             level (str, optional): Defines the logging type. Defaults to "info".
-            date (bool, optional): Defines whether the date should be included in the logs. Defaults to True.
             encode (bool, optional): Defines whether the arguments are to be encoded. Defaults to False.
             custom_extension (bool, optional): Defines whether the user may use an extension other than .log. Defaults to False.
 
-        Raises:
-            TypeError: Incorrect type for custom_extension parameter. Must be boolean;
-            OSError: The file cannot be created;
-            OSError: The file cannot be created;
-            OSError: The file cannot be created;
-            OSError: The file cannot be created;
-            ValueError: Unknown priority code;
-            ValueError: Unknown priority code;
-            ValueError: Unknown priority code;
-            ValueError: Incorect opening mode;
-            ValueError: File mode must be a string;
         """
 
         if isinstance(custom_extension, bool): self.__custom_extension = custom_extension
-        else: raise TypeError("Incorrect type for custom_extension parameter. Must be boolean.")
-
-        # -------------------------------------------- Replacing extension --------------------------------------------
+        else: raise InvalidParameterException("Incorrect type for custom_extension parameter. Must be boolean.")
 
         if not self.__custom_extension:
-            try: file = file.replace(str(file.split(".")[-1]), "log")
+            try: file = file.replace(file.split(".")[-1], "log")
             except: pass
 
-            if not str(file.split(".")[-1]) == "log": file += ".log"
+            if not file.split(".")[-1] == "log": file += ".log"
 
-        # ----------------------------------------------- Setting file  -----------------------------------------------
+        if not os.path.exists(self.__directory["data"]): raise DirectoryNotFound(self.__directory["data"])
 
-        if not os.path.exists("{}/{}".format(str(self.__directory["data"]), str(file))):
-            if os.path.exists(str(self.__directory["data"])):
-                for i in range(self.__TRIES):
-                    try: self.__log = open(f"{str(self.__directory['data'])}/{str(file)}", "w")
-                    except: pass
-                    else: 
-                        self.__file = "{}/{}".format(str(self.__directory["data"]), str(file))
-                        self.__log.close()
-                        break
+        if not os.path.exists(f"{self.__directory['data']}/{file}"):
+            for i in range(self.__TRIES):
+                try: self.__log = open(f"{self.__directory['data']}/{file}", "w")
+                except: pass
+                else: 
+                    self.__file = f"{self.__directory['data']}/{file}"
+                    self.__log.close()
+                    break
 
-                else: raise OSError("The '{}/{}' file cannot be created.".format(str(self.__directory["data"]), str(file)))
-
-            else: raise OSError("The '{}' directory has been deleted.".format(str(self.__directory["data"])))
-
-        else:
-            if os.path.exists(str(self.__directory["data"])):
-                for i in range(self.__TRIES):
-                    try: self.__log = open(f"{str(self.__directory['data'])}/{str(file)}", "r")
-                    except: pass
-                    else:
-                        self.__file = "{}/{}".format(str(self.__directory["data"]), str(file))
-                        self.__log.close()
-                        break
-
-                else: raise OSError("The '{}/{}' file cannot be created.".format(str(self.__directory["data"]), str(file)))
-
-            else: raise OSError("The '{}' directory has been deleted.".format(str(self.__directory["data"])))
-
-        # ----------------------------------------------- Setting level -----------------------------------------------
-
-        if isinstance(level, int):
-            if level > self.__LOWEST_CODE and level < self.__HIGHEST_CODE: self.__level = level
-            else: raise ValueError("Unknown priority code.")
-        elif isinstance(level, str):
-            try:self.__level = self.__priority_names[level.lower()]
-            except: raise ValueError("Unknown priority code.")
-        else: raise ValueError("Unknown priority code.")
+            else: raise FileCannotBeCreated(f"{self.__directory['data']}/{file}")
 
         # ----------------------------------------------- Setting mode ------------------------------------------------
 
-        opening_modes_temp = ["w", "wb", "a"]
+        __opening_modes = ["w", "wb", "a"]
 
-        if isinstance(mode, str):
-            if not mode in opening_modes_temp: raise ValueError("Incorrect opening type.")
-            else: self.__mode = mode
-        else:raise ValueError("File mode must be string.")
+        if not mode in __opening_modes: 
+            raise InvalidParameterException("Incorrect mode parameter. Must be one of the following: " + ", ".join(__opening_modes))
 
-        del opening_modes_temp
-
-        self.__date = date
+        self.__mode = mode
         self.__encode = encode
+        self.__file = f"{self.__directory['data']}/{file}"
 
-        # -------------------------------------------------------------------------------------------------------------
+        del __opening_modes
 
     def __encoder(self, arg):
         """
@@ -256,106 +200,99 @@ class LoggerClass:
         if self.__encode: return arg.encode()
         else: return arg
 
-    def emergency(self, error = "0x0", args = "None"):
+
+    def emergency(self, code = 0, error = "0x0", arguments = "None") -> None:
         """
         Enters logs to the event log file.
 
         Args:
+            code (int, optional): Stores the error code. Defaults to 0.
             error (str, optional): Holds an error code. Defaults to "0x0".
-            args (str, optional): Keeps any additional information. Defaults to "None".
+            arguments (str, optional): Keeps any additional information. Defaults to "None".
         """
+        with open(self.__file, self.__mode) as log:
+            log.write(self.__format_message("EMERGENCY", self.__facility_names[code], error, self.__encoder(arguments)))
 
-        with open(self.__file, self.__mode) as f:
-            f.write(self.__make_log(lvl = "EMERGENCY", date = self.__date,
-                    err = error, arg = self.__encoder(args)))
-
-    def alert(self, error = "0x0", args = "None"):
+    def alert(self, code = 0, error = "0x0", args = "None") -> None:
         """
         Enters logs to the event log file.
 
         Args:
+            code (int, optional): Stores the error code. Defaults to 0.
             error (str, optional): Holds an error code. Defaults to "0x0".
-            args (str, optional): Keeps any additional information. Defaults to "None".
+            arguments (str, optional): Keeps any additional information. Defaults to "None".
         """
+        with open(self.__file, self.__mode) as log:
+            log.write(self.__format_message("ALERT", self.__facility_names[code], error, self.__encoder(args)))
 
-        with open(self.__file, self.__mode) as f:
-            f.write(self.__make_log(lvl = "ALERT", date = self.__date,
-                    err = error, arg = self.__encoder(args)))
-
-    def critical(self, error = "0x0", args = "None"):
+    def critical(self, code = 0, error = "0x0", args = "None") -> None:
         """
         Enters logs to the event log file.
 
         Args:
+            code (int, optional): Stores the error code. Defaults to 0.
             error (str, optional): Holds an error code. Defaults to "0x0".
-            args (str, optional): Keeps any additional information. Defaults to "None".
+            arguments (str, optional): Keeps any additional information. Defaults to "None".
         """
+        with open(self.__file, self.__mode) as log:
+            log.write(self.__format_message("CRITICAL", self.__facility_names[code], error, self.__encoder(args)))
 
-        with open(self.__file, self.__mode) as f:
-            f.write(self.__make_log(lvl = "CRITICAL", date = self.__date,
-                    err = error, arg = self.__encoder(args)))
-
-    def error(self, error = "0x0", args = "None"):
+    def error(self, code = 0, error = "0x0", args = "None") -> None:
         """
         Enters logs to the event log file.
 
         Args:
+            code (int, optional): Stores the error code. Defaults to 0.
             error (str, optional): Holds an error code. Defaults to "0x0".
-            args (str, optional): Keeps any additional information. Defaults to "None".
+            arguments (str, optional): Keeps any additional information. Defaults to "None".
         """
+        with open(self.__file, self.__mode) as log:
+            log.write(self.__format_message("ERROR", self.__facility_names[code], error, self.__encoder(args)))
 
-        with open(self.__file, self.__mode) as f:
-            f.write(self.__make_log(lvl = "ERROR", date = self.__date,
-                    err = error, arg = self.__encoder(args)))
-
-    def warning(self, error = "0x0", args = "None"):
+    def warning(self, code = 0, error = "0x0", args = "None") -> None:
         """
         Enters logs to the event log file.
 
         Args:
+            code (int, optional): Stores the error code. Defaults to 0.
             error (str, optional): Holds an error code. Defaults to "0x0".
-            args (str, optional): Keeps any additional information. Defaults to "None".
+            arguments (str, optional): Keeps any additional information. Defaults to "None".
         """
+        with open(self.__file, self.__mode) as log:
+            log.write(self.__format_message("WARNING", self.__facility_names[code], error, self.__encoder(args)))
 
-        with open(self.__file, self.__mode) as f:
-            f.write(self.__make_log(lvl = "WARNING", date = self.__date,
-                    err = error, arg = self.__encoder(args)))
-
-    def notice(self, error = "0x0", args = "None"):
+    def notice(self, code = 0, error = "0x0", args = "None") -> None:
         """
         Enters logs to the event log file.
 
         Args:
+            code (int, optional): Stores the error code. Defaults to 0.
             error (str, optional): Holds an error code. Defaults to "0x0".
-            args (str, optional): Keeps any additional information. Defaults to "None".
+            arguments (str, optional): Keeps any additional information. Defaults to "None".
         """
+        with open(self.__file, self.__mode) as log:
+            log.write(self.__format_message("NOTICE", self.__facility_names[code], error, self.__encoder(args)))
 
-        with open(self.__file, self.__mode) as f:
-            f.write(self.__make_log(lvl = "NOTICE", date = self.__date,
-                    err = error, arg = self.__encoder(args)))
-
-    def info(self, error = "0x0", args = "None"):
+    def info(self, code = 0, error = "0x0", args = "None") -> None:
         """
         Enters logs to the event log file.
 
         Args:
+            code (int, optional): Stores the error code. Defaults to 0.
             error (str, optional): Holds an error code. Defaults to "0x0".
-            args (str, optional): Keeps any additional information. Defaults to "None".
+            arguments (str, optional): Keeps any additional information. Defaults to "None".
         """
+        with open(self.__file, self.__mode) as log:
+            log.write(self.__format_message("INFO", self.__facility_names[code], error, self.__encoder(args)))
 
-        with open(self.__file, self.__mode) as f:
-            f.write(self.__make_log(lvl = "INFO", date = self.__date,
-                    err = error, arg = self.__encoder(args)))
-
-    def debug(self, error = "0x0", args = "None"):
+    def debug(self, code = 0, error = "0x0", args = "None") -> None:
         """
         Enters logs to the event log file.
 
         Args:
+            code (int, optional): Stores the error code. Defaults to 0.
             error (str, optional): Holds an error code. Defaults to "0x0".
-            args (str, optional): Keeps any additional information. Defaults to "None".
+            arguments (str, optional): Keeps any additional information. Defaults to "None".
         """
-        
-        with open(self.__file, self.__mode) as f:
-            f.write(self.__make_log(lvl = "DEBUG", date = self.__date,
-                    err = error, arg = self.__encoder(args)))
+        with open(self.__file, self.__mode) as log:
+            log.write(self.__format_message("DEBUG", self.__facility_names[code], error, self.__encoder(args)))
