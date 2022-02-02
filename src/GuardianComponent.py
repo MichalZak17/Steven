@@ -451,7 +451,7 @@ class GuardianClass:
                 if self.__check_file(self.__file["dirstruct"]):
                     try:
                         with open(self.__file["dirstruct"], "rb") as f:
-                            self.__dirstruct = pickle.load(f)
+                            self.__directory = pickle.load(f)
                     except:
                         self.__create_log(lvl = "warning", err = "0x16", arg = self.__file["dirstruct"])
                         os.remove(self.__file["dirstruct"])
