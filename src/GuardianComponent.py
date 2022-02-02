@@ -133,7 +133,8 @@ class GuardianClass:
         }
         self.__file                     =           {
             "log":                      "data/logs.log",
-            "config":                   "config/config.ini"
+            "config":                   "config/config.ini",
+            "dirstruct":                "data/dirstruct.structure"
         }
 
         self.__modules_default          =           {
@@ -175,6 +176,9 @@ class GuardianClass:
         self.__modules_project          =           []
 
         self.__TRIES                    =           5
+
+        self.__THREAD_RUNNING           =           False
+        self.__THREAD_TIMEOUT           =           5
 
     def __create_log(self, lvl = "info", err = "0x0", arg = "None") -> None:
         """
@@ -391,3 +395,116 @@ class GuardianClass:
             for module in self.__modules_integrated:
                 try: globals()[module] = importlib.import_module(module)
                 except: raise ModuleCannotBeImported(module)
+
+    # ------------------------------------------- Thread Controller Section -------------------------------------------
+
+    def init_thread(self):
+        self.__create_log(arg = "Initializing thread")
+        self.__THREAD_RUNNING = True
+
+    def ThreadSystem(self):
+        self.__create_log(arg = "Starting thread")
+        while True:
+            time.sleep(self.__THREAD_TIMEOUT)
+
+            if self.__THREAD_RUNNING:
+
+                if not os.path.exists(self.__directory["data"]):
+                    for i in range(self.__TRIES):
+                        try: os.makedirs(self.__directory["data"])
+                        except: pass
+                        else: break
+
+                    else: raise DirectoryCannotBeCreated(self.__directory["data"])
+
+                    for i in range(self.__TRIES):
+                        try: self.__log = open(self.__file["log"], "w")
+                        except: pass
+                        else:
+                            self.__log.close()
+                            break
+
+                    else: raise FileCannotBeCreated(self.__file["log"])
+                    
+                    self.__create_log(lvl = "warning", err = "0x5", arg = self.__directory["data"])
+                    self.__create_log(arg = f"The {self.__directory['data']} has been created")
+
+                    self.__create_log(lvl = "warning", err = "0x4", arg = self.__file["log"])
+                    self.__create_log(arg = f"The {self.__file['log']} has been created")
+
+                if not os.path.exists(self.__file["log"]):
+                    for i in range(self.__TRIES):
+                        try: self.__log = open(self.__file["log"], "w")
+                        except: pass
+                        else:
+                            self.__log.close()
+                            break
+
+                    else: raise FileCannotBeCreated(self.__file["log"])
+        
+                    self.__create_log(lvl = "warning", err = "0x4", arg = self.__file["log"])
+                    self.__create_log(arg = f"The {self.__file['log']} has been created")
+
+                for dir in self.__directory:
+                    self.__check_dir(dir = self.__directory[dir])
+
+                if self.__check_file(self.__file["dirstruct"]):
+                    try:
+                        with open(self.__file["dirstruct"], "rb") as f:
+                            self.__dirstruct = pickle.load(f)
+                    except:
+                        self.__create_log(lvl = "warning", err = "0x16", arg = self.__file["dirstruct"])
+                        os.remove(self.__file["dirstruct"])
+                        self.__create_log(arg = f"The {self.__file['dirstruct']} has been removed")
+                
+                for e in os.listdir("."):
+                    if os.path.isfile(str(e)):
+                        if not str(e) in self.__file: self.__file[str(e)] = str(e)
+                    elif os.path.isdir(str(e)):
+                        if not str(e) in self.__directory: self.__directory[str(e)] = str(e)
+
+                __temp_dict = self.__directory.copy()
+                        
+                for d in __temp_dict:
+                    if os.path.exists(d):
+                        for e in os.listdir(d):
+
+                            if os.path.isfile(f"{d}/{e}"):
+                                if not f"{d}/{e}" in self.__file:
+                                    self.__file[f"{d}/{e}"] = f"{d}/{e}"
+
+                            elif os.path.isdir(f"{d}/{e}"):                                
+                                if not f"{d}/{e}" in self.__directory:
+                                    self.__directory[f"{d}/{e}"] = f"{d}/{e}"
+                                                            
+                del __temp_dict
+
+                for dir in self.__directory:
+                    if not os.path.exists(self.__directory[dir]):
+                        self.__missing_directory.append(self.__directory[dir])
+
+                for file in self.__file:
+                    if not os.path.exists(self.__file[file]):
+                        self.__missing_file.append(self.__file[file])
+
+                while len(self.__missing_directory) > 0:
+                    self.__create_log(lvl = "warning", err = "0x5", arg = self.__missing_directory[0])
+
+                    if not os.path.exists(self.__missing_directory[0]):
+                        for i in range(self.__TRIES):
+                            try: os.makedirs(self.__missing_directory[0])
+                            except: pass
+                            else:
+                                self.__create_log(arg = f"The {self.__missing_directory[0]} has been created")
+                                break
+
+                        else: raise DirectoryCannotBeCreated(self.__missing_directory[0])
+
+                    self.__missing_directory.pop(0)
+
+                while len(self.__missing_file) > 0:
+                    self.__create_log(lvl = "warning", err = "0x4", arg = self.__missing_file[0])
+                    self.__missing_file.pop(0)
+
+                with open(self.__file["dirstruct"], "wb") as f:
+                    pickle.dump(self.__directory, f)
