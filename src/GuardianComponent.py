@@ -121,6 +121,7 @@ class LogMessageCannotBeCreated(Exception):
 class GuardianClass:
     def __init__(self) -> None:
         self.__missing_file             =           []
+        self.__missing_file_flagged     =           []
         self.__missing_directory        =           []
         self.__missing_module           =           []
 
@@ -177,7 +178,8 @@ class GuardianClass:
 
         self.__TRIES                    =           5
 
-        self.__THREAD_RUNNING           =           False
+        self.__THREAD_CURRENT_MODE      =           ""
+        self.__THREAD_MODES             =           ["offline", "online", "error", "repairing"]
         self.__THREAD_TIMEOUT           =           5
 
     def __create_log(self, lvl = "info", err = "0x0", arg = "None") -> None:
@@ -199,17 +201,17 @@ class GuardianClass:
             debug: Debug.
             notice: Notice.
         """
+        try: 
+            __caller_temp = inspect.getouterframes(inspect.currentframe(), 4)
+            __caller = f"{__caller_temp[1][1]}.{__caller_temp[1][3]}()"
+        except: raise LogMessageCannotBeCreated()
+
         __levels = [
             "emergency", "alert", "critical", "error",
             "warning", "notice", "info", "debug"
         ]
 
         if lvl not in __levels: raise InvalidModeException(lvl)
-
-        try: 
-            __caller_temp = inspect.getouterframes(inspect.currentframe(), 4)
-            __caller = f"{__caller_temp[1][1]}.{__caller_temp[1][3]}()"
-        except: raise LogMessageCannotBeCreated()
 
         try:
             with open(self.__file["log"], "a") as log:
@@ -398,16 +400,54 @@ class GuardianClass:
 
     # ------------------------------------------- Thread Controller Section -------------------------------------------
 
-    def init_thread(self):
-        self.__create_log(arg = "Initializing thread")
-        self.__THREAD_RUNNING = True
+    """
+    Thread Controller Section
+    
+    This section contains the methods that control the threads.
+    
+    Modes:
+        - Offline: Thread is not running.
+        - Online: Thread is running.
+        - Error: Thread has an error.
+        - Repairing: Thread is being repaired.
+    """
+
+    def thread_start(self) -> None:
+        """
+        Changes the thread status to Online.
+        """
+        if not self.__THREAD_CURRENT_MODE == "online":
+            self.__THREAD_CURRENT_MODE = "online"
+            self.__create_log(arg = "Guardian Core mode has been changed to 'online'")
+
+    def thread_stop(self) -> None:
+        """
+        Changes the thread status to Offline.
+        """
+        if self.__THREAD_CURRENT_MODE == "online":
+            self.__THREAD_CURRENT_MODE = "offline"
+            self.__create_log(arg = "Guardian Core mode has been changed to 'offline'")
+
+    def thread_status(self, log = False) -> bool:
+        """
+        Returns the status of the Guardian Core thread.
+
+        Args:
+            log (bool): If True, the status will be logged with other parameters.
+
+        Returns:
+            bool: True if the thread is running, False otherwise.
+        """
+        if log: self.__create_log(arg = f"Guardian Core status: {self.__THREAD_CURRENT_MODE}")
+        return self.__THREAD_CURRENT_MODE
 
     def ThreadSystem(self):
-        self.__create_log(arg = "Starting thread")
+        self.__create_log(arg = "Initializing Guardian Core thread")
+
         while True:
             time.sleep(self.__THREAD_TIMEOUT)
 
-            if self.__THREAD_RUNNING:
+            if not self.__THREAD_CURRENT_MODE == "offline":
 
                 if not os.path.exists(self.__directory["data"]):
                     for i in range(self.__TRIES):
@@ -503,7 +543,10 @@ class GuardianClass:
                     self.__missing_directory.pop(0)
 
                 while len(self.__missing_file) > 0:
-                    self.__create_log(lvl = "warning", err = "0x4", arg = self.__missing_file[0])
+                    if not self.__missing_file[0] in self.__missing_file_flagged:
+                        self.__create_log(lvl = "warning", err = "0x4", arg = self.__missing_file[0])
+                        self.__missing_file_flagged.append(self.__missing_file[0])
+                        
                     self.__missing_file.pop(0)
 
                 with open(self.__file["dirstruct"], "wb") as f:
