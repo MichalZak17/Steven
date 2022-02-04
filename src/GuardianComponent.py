@@ -116,6 +116,14 @@ class LogMessageCannotBeCreated(Exception):
     def __str__(self):
         return f" -> The log message cannot be created."
 
+class ThreadCannotBeStarted(Exception):
+    def __init__(self, arg):
+        self.arg = str(arg)
+        super().__init__(self.arg)
+
+    def __str__(self):
+        return f" -> The '{self.arg}' thread cannot be started."
+
 # --------------------------------------------------------------------------------------------------------------------- 
 
 class GuardianClass:
@@ -181,6 +189,8 @@ class GuardianClass:
         self.__THREAD_CURRENT_MODE      =           ""
         self.__THREAD_MODES             =           ["offline", "online", "error", "repairing"]
         self.__THREAD_TIMEOUT           =           5
+
+    # --------------------------------------------------- Utilities ---------------------------------------------------
 
     def __create_log(self, lvl = "info", err = "0x0", arg = "None") -> None:
         """
@@ -301,7 +311,9 @@ class GuardianClass:
         try: importlib.reload(globals()[module])
         except: self.__create_log(lvl = "error", err = "0x1C", arg = module)
         else: self.__create_log(arg = f"The {module} module has been reloaded")
-
+    
+    # ----------------------------------------------- Pre configuration -----------------------------------------------
+    
     def configure(self, mode = "default") -> None:
         """
         Configure the Guardian Core for future operations.
@@ -412,21 +424,45 @@ class GuardianClass:
         - Repairing: Thread is being repaired.
     """
 
-    def thread_start(self) -> None:
+    def thread_start(self, start = False) -> None:
         """
-        Changes the thread status to Online.
+        Changes the status of the Guardian Core to online, if it's offline.
+
+        Args:
+            start (bool): If True, the thread will be started.
         """
         if not self.__THREAD_CURRENT_MODE == "online":
             self.__THREAD_CURRENT_MODE = "online"
             self.__create_log(arg = "Guardian Core mode has been changed to 'online'")
 
-    def thread_stop(self) -> None:
+        if start:
+            try:
+                self.__THREAD = threading.Thread(target = self.__core)
+                self.__THREAD.start()
+            except:
+                self.__THREAD_CURRENT_MODE = "error"
+                self.__create_log(lvl = "error", err = "0x22", arg = "Guardian Core startup")
+                raise ThreadCannotBeStarted("Guardian Core")   
+            else: self.__create_log(arg = "Guardian Core has been started")
+           
+    def thread_stop(self, kill = False) -> None:
         """
-        Changes the thread status to Offline.
+        Changes the status of the Guardian Core to offline, if it's online.
+
+        Args:
+            kill (bool): If True, the thread will be killed.
         """
         if self.__THREAD_CURRENT_MODE == "online":
+            self.__THREAD_CURRENT_MODE = "offline"            
+            self.__create_log(arg = "Guardian Core has been turned 'offline'")
+
+        if kill:
             self.__THREAD_CURRENT_MODE = "offline"
-            self.__create_log(arg = "Guardian Core mode has been changed to 'offline'")
+            self.__create_log(arg = "Guardian Core has been turned 'offline'")
+
+            try: self.__THREAD.join()
+            except: pass
+            else: self.__create_log(arg = "Guardian Core has been killed")
 
     def thread_status(self, log = False) -> bool:
         """
@@ -441,7 +477,7 @@ class GuardianClass:
         if log: self.__create_log(arg = f"Guardian Core status: {self.__THREAD_CURRENT_MODE}")
         return self.__THREAD_CURRENT_MODE
 
-    def ThreadSystem(self):
+    def __core(self):
         self.__create_log(arg = "Initializing Guardian Core thread")
 
         while True:
