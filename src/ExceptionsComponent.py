@@ -168,6 +168,15 @@ class LogMessageCannotBeCreated(Exception):
         return f" -> The log message cannot be created."
 
 
+class ThreadCannotBeStarted(Exception):
+    def __init__(self, arg):
+        self.arg = str(arg)
+        super().__init__(self.arg)
+
+    def __str__(self):
+        return f" -> The '{self.arg}' thread cannot be started."
+
+
 class CannotOpenDatabase(Exception):
     def __init__(self, arg):
         self.arg = str(arg)
