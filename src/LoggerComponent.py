@@ -13,7 +13,7 @@ The basic classes defined by the module, together with their functions, are list
 
 """
 
-from ExceptionsComponent import *
+from .ExceptionsComponent import *
 
 from os.path    import exists
 from datetime   import datetime
