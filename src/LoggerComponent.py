@@ -13,13 +13,14 @@ The basic classes defined by the module, together with their functions, are list
 
 """
 
-import os
-import inspect
-import datetime
-from .ExceptionsComponent import *
+from ExceptionsComponent import *
+
+from os.path    import exists
+from datetime   import datetime
+from inspect    import getouterframes, currentframe
 
 class LoggerClass:
-    def __init__(self):
+    def __init__(self) -> None:
         self.__directory = {
             "data": "data"
         }
@@ -28,31 +29,6 @@ class LoggerClass:
         }
 
         self.__TRIES            =       5
-        self.__LOWEST_CODE      =       -1
-        self.__HIGHEST_CODE     =       24
-
-        # Extensive priority codes
-        self.LOG_EMERGENCY      =       0   # System is unusable.
-        self.LOG_ALERT          =       1   # Action must be taken immediately.
-        self.LOG_CRITICAL       =       2   # Critical conditions.
-        self.LOG_ERROR          =       3   # Error conditions.
-        self.LOG_WARNING        =       4   # Warning conditions.
-        self.LOG_NOTICE         =       5   # Normal but significant condition.
-        self.LOG_INFO           =       6   # Informational.
-        self.LOG_DEBUG          =       7   # Debug-level messages.
-
-        self.__priority_names = {
-            self.LOG_EMERGENCY: "EMERGENCY",
-            self.LOG_ALERT:     "ALERT",
-            self.LOG_CRITICAL:  "CRITICAL",
-            self.LOG_ERROR:     "ERROR",
-            self.LOG_WARNING:   "WARNING",
-            self.LOG_NOTICE:    "NOTICE",
-            self.LOG_INFO:      "INFO",
-            self.LOG_DEBUG:     "DEBUG"
-        }        
-
-        # --------------------------------------------------------------------
 
         self.__file             = ""
         self.__mode             = ""
@@ -61,7 +37,8 @@ class LoggerClass:
 
     def __encoder(self, arg):
         """
-        Encodes the user-supplied argument into bytes.
+        Encodes the user-supplied argument into bytes. In future version this funtion will 
+        be replaced by SecurityComponent's function.
 
         Args:
             arg (str): Stores the message to be encoded.
@@ -69,28 +46,25 @@ class LoggerClass:
         Returns:
             bytes: Returns an argument converted to bytes ready for an event log entry
         """
-
         if self.__encode: return arg.encode()
         else: return arg
     
-    def __format_message(self, lvl, err, arg):
+    def __format_message(self, lvl, err, arg, caller):
         """
         Returns a text message that is written to the event log as a log.
 
         Args:
-            lvl (str): Stores information about the login level. Defaults to "warning".
-            code (int): Stores the error code. Defaults to 0.
-            err (str): Stores information about the error code. Defaults to "0x0".
-            arg (str): Stores information about any additional information regarding the log. Defaults to "None".
+            lvl (str): Stores information about the login level.
+            err (str): Stores information about the error code.
+            arg (str): Stores information about any additional information regarding the log.
+            caller (str): Stores information about the caller of the function.
 
         Returns:
-            str: Returns a text message that is written to the event log as a log.
+            str: Returns a text message that is written to the event log.
         """
-        __caller_temp = inspect.getouterframes(inspect.currentframe(), 4)
-        __caller = f"{__caller_temp[1][1]}.{__caller_temp[1][3]}()"
+        __caller = f"{caller[1][1].split('Steven/')[-1]}.{caller[1][3]}()"
 
-        try: return f"{lvl.upper()}; {__caller}; {datetime.datetime.now()}; {err}; {self.__encoder(arg)}; \n"
-        except: raise LogMessageCannotBeCreated()
+        return f"{lvl.upper()}; {__caller}; {datetime.now()}; {err}; {self.__encoder(arg)}; \n"
 
     def configure(self, file = "logs.log", mode = "a", encode = False, custom_extension = False):
         """
@@ -102,21 +76,16 @@ class LoggerClass:
             level (str, optional): Defines the logging type. Defaults to "info".
             encode (bool, optional): Defines whether the arguments are to be encoded. Defaults to False.
             custom_extension (bool, optional): Defines whether the user may use an extension other than .log. Defaults to False.
-
         """
 
         if isinstance(custom_extension, bool): self.__custom_extension = custom_extension
         else: raise InvalidParameterException("Incorrect type for custom_extension parameter. Must be boolean.")
 
-        if not self.__custom_extension:
-            try: file = file.replace(file.split(".")[-1], "log")
-            except: pass
+        if not self.__custom_extension: file = file.replace(file.split(".")[-1], "log")
 
-            if not file.split(".")[-1] == "log": file += ".log"
+        if not exists(self.__directory["data"]): raise DirectoryNotFound(self.__directory["data"])
 
-        if not os.path.exists(self.__directory["data"]): raise DirectoryNotFound(self.__directory["data"])
-
-        if not os.path.exists(f"{self.__directory['data']}/{file}"):
+        if not exists(f"{self.__directory['data']}/{file}"):
             for i in range(self.__TRIES):
                 try: self.__log = open(f"{self.__directory['data']}/{file}", "w")
                 except: pass
@@ -126,8 +95,6 @@ class LoggerClass:
                     break
 
             else: raise FileCannotBeCreated(f"{self.__directory['data']}/{file}")
-
-        # ----------------------------------------------- Setting mode ------------------------------------------------
 
         __opening_modes = ["w", "wb", "a"]
 
@@ -140,7 +107,6 @@ class LoggerClass:
 
         del __opening_modes
 
-
     def emergency(self, err = "0x0", arg = "None") -> None:
         """
         Enters logs to the event log file.
@@ -150,7 +116,7 @@ class LoggerClass:
             arg (str, optional): Keeps any additional information. Defaults to "None".
         """
         with open(self.__file, self.__mode) as log:
-            log.write(self.__format_message("EMERGENCY", err, arg))
+            log.write(self.__format_message("EMERGENCY", err, arg, getouterframes(currentframe(), 4)))
 
     def alert(self, err = "0x0", arg = "None") -> None:
         """
@@ -161,7 +127,7 @@ class LoggerClass:
             arg (str, optional): Keeps any additional information. Defaults to "None".
         """
         with open(self.__file, self.__mode) as log:
-            log.write(self.__format_message("ALERT", err, arg))
+            log.write(self.__format_message("ALERT", err, arg, getouterframes(currentframe(), 4)))
 
     def critical(self, err = "0x0", arg = "None") -> None:
         """
@@ -172,7 +138,7 @@ class LoggerClass:
             arg (str, optional): Keeps any additional information. Defaults to "None".
         """
         with open(self.__file, self.__mode) as log:
-            log.write(self.__format_message("CRITICAL", err, arg))
+            log.write(self.__format_message("CRITICAL", err, arg, getouterframes(currentframe(), 4)))
 
     def error(self, err = "0x0", arg = "None") -> None:
         """
@@ -183,7 +149,7 @@ class LoggerClass:
             arg (str, optional): Keeps any additional information. Defaults to "None".
         """
         with open(self.__file, self.__mode) as log:
-            log.write(self.__format_message("ERROR", err, arg))
+            log.write(self.__format_message("ERROR", err, arg, getouterframes(currentframe(), 4)))
 
     def warning(self, err = "0x0", arg = "None") -> None:
         """
@@ -194,7 +160,7 @@ class LoggerClass:
             arg (str, optional): Keeps any additional information. Defaults to "None".
         """
         with open(self.__file, self.__mode) as log:
-            log.write(self.__format_message("WARNING", err, arg))
+            log.write(self.__format_message("WARNING", err, arg, getouterframes(currentframe(), 4)))
 
     def notice(self, err = "0x0", arg = "None") -> None:
         """
@@ -205,7 +171,7 @@ class LoggerClass:
             arg (str, optional): Keeps any additional information. Defaults to "None".
         """
         with open(self.__file, self.__mode) as log:
-            log.write(self.__format_message("NOTICE", err, arg))
+            log.write(self.__format_message("NOTICE", err, arg, getouterframes(currentframe(), 4)))
 
     def info(self, err = "0x0", arg = "None") -> None:
         """
@@ -216,7 +182,7 @@ class LoggerClass:
             arg (str, optional): Keeps any additional information. Defaults to "None".
         """
         with open(self.__file, self.__mode) as log:
-            log.write(self.__format_message("INFO", err, arg))
+            log.write(self.__format_message("INFO", err, arg, getouterframes(currentframe(), 4)))
 
     def debug(self, err = "0x0", arg = "None") -> None:
         """
@@ -227,4 +193,4 @@ class LoggerClass:
             arg (str, optional): Keeps any additional information. Defaults to "None".
         """
         with open(self.__file, self.__mode) as log:
-            log.write(self.__format_message("DEBUG", err, arg))
+            log.write(self.__format_message("DEBUG", err, arg, getouterframes(currentframe(), 4)))
