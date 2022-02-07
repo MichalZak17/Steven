@@ -62,9 +62,11 @@ class LoggerClass:
         Returns:
             str: Returns a text message that is written to the event log.
         """
-        __caller = f"{caller[1][1].split('Steven/')[-1]}.{caller[1][3]}()"
+        try: __caller = f"{caller[1][1].split('Steven/')[-1]}.{caller[1][3]}()"
+        except: raise LogMessageCannotBeCreated()
 
-        return f"{lvl.upper()}; {__caller}; {datetime.now()}; {err}; {self.__encoder(arg)}; \n"
+        try: return f"{lvl.upper()}; {__caller}; {datetime.now()}; {err}; {self.__encoder(arg)}; \n"
+        except: LogMessageCannotBeCreated()
 
     def configure(self, file = "logs.log", mode = "a", encode = False, custom_extension = False):
         """
